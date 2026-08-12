@@ -6,7 +6,7 @@ const STORAGE_KEY = 'hobby-diary:v1';
 const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.8';
+const APP_VERSION = '1.9';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -810,6 +810,11 @@ function registerSW() {
   });
   navigator.serviceWorker.register('./sw.js')
     .then(reg => {
+      // 已有等待接管的新版本时（例如上次升级中断），再次提示用户
+      if (reg.waiting && !sessionStorage.getItem(UPDATE_DISMISS_KEY)) {
+        pendingUpdateWorker = reg.waiting;
+        showUpdateBanner();
+      }
       reg.addEventListener('updatefound', () => {
         const worker = reg.installing;
         if (!worker) return;
