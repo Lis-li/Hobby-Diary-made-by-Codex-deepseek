@@ -6,7 +6,7 @@ const STORAGE_KEY = 'hobby-diary:v1';
 const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.7';
+const APP_VERSION = '1.8';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -152,6 +152,8 @@ function renderHeader() {
   if (chip) chip.textContent = `🔥 连续 ${currentStreakFor(uniqueDays())} 天`;
   const sub = $('#header-sub');
   if (sub) sub.textContent = `${fmtCnDate(todayStr())} ${weekLabel(todayStr())} · 累计 ${state.records.length} 条记录`;
+  const tag = $('#version-tag');
+  if (tag) tag.textContent = 'v' + APP_VERSION;
 }
 
 function hobbyCardHtml(h, date) {

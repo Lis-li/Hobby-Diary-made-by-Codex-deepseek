@@ -50,6 +50,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .brand-logo img{width:30px;height:30px;border-radius:8px;object-fit:cover;display:block}
 .brand-text{min-width:0}
 .brand-text h1{font-size:20px;font-weight:800;letter-spacing:.5px}
+.version-tag{font-size:10px;color:var(--text-soft);font-weight:600;margin-left:6px;vertical-align:2px}
 .brand-text p{font-size:11px;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .header-actions{display:flex;align-items:center;gap:8px}
 .chip{

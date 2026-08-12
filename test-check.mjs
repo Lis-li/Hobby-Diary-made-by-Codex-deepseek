@@ -154,8 +154,9 @@ async function main() {
   const bannerDismissed = await ev(`document.querySelector('#update-banner').classList.contains('hidden')`);
   const versionText = await ev(`document.querySelector('#view-data .about').textContent`);
   const remoteVersion = await ev(`fetch('version.json?t=' + Date.now()).then(r=>r.json()).then(d=>d.version)`);
+  const versionTag = await ev(`document.querySelector('#version-tag').textContent`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerShown, bannerDismissed, versionShows17: versionText.includes('v1.7'), remoteVersion }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerShown, bannerDismissed, versionShows18: versionText.includes('v1.8'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();
