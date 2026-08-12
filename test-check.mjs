@@ -6,7 +6,8 @@ import { join } from 'node:path';
 
 const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const PORT = 9333;
-const BASE = 'http://localhost:8080/index.html?demo=1&tab=';
+// 默认测本地服务器；部署验证时可设置环境变量 BASE_URL 指向线上站点
+const BASE = (process.env.BASE_URL || 'http://localhost:8080/index.html') + '?demo=1&tab=';
 
 const userDir = mkdtempSync(join(tmpdir(), 'hobby-cdp-'));
 const proc = spawn(CHROME, [
