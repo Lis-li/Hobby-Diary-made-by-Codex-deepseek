@@ -145,7 +145,15 @@ async function main() {
   await wait(200);
   const logoDefault = await ev(`document.querySelector('#brand-logo').textContent.trim() === '🌸'`);
 
-  console.log('交互结果：', JSON.stringify({ before, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault }, null, 2));
+  /* 更新横幅测试 */
+  const bannerHiddenInit = await ev(`document.querySelector('#update-banner').classList.contains('hidden')`);
+  await ev(`showUpdateBanner()`);
+  const bannerShown = await ev(`!document.querySelector('#update-banner').classList.contains('hidden')`);
+  await ev(`document.querySelector('[data-action="dismiss-update"]').click()`);
+  const bannerDismissed = await ev(`document.querySelector('#update-banner').classList.contains('hidden')`);
+  const versionText = await ev(`document.querySelector('#view-data .about').textContent`);
+
+  console.log('交互结果：', JSON.stringify({ before, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerShown, bannerDismissed, versionShows15: versionText.includes('v1.5') }, null, 2));
 
   ws.close();
   proc.kill();

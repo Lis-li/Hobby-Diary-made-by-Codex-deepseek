@@ -51,3 +51,5 @@ AGENTS.md             本说明
 - 换浏览器或清缓存前，提醒用户先在「数据」页导出 JSON 备份
 - 修改代码后先运行 `node --check app.js`，再运行 `node test-check.mjs` 验证再交付
 - 修改应用图标后，需重新生成 icons/icon-192.png 与 icon-512.png（源文件为 icons/app-icon.svg）
+- 发布新版本时，同步 bump app.js 与 sw.js 中的 `APP_VERSION`（二者必须一致），SW 缓存名随版本自动变化
+- 更新提示机制：打开应用时主线程调用 `reg.update()` 静默检测；新 Service Worker 进入 waiting 后顶部横幅提示；点击后发送 `SKIP_WAITING` 消息，新 SW 接管并自动刷新

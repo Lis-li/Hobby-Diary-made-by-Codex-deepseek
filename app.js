@@ -5,6 +5,8 @@
 const STORAGE_KEY = 'hobby-diary:v1';
 const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
+const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
+const APP_VERSION = '1.5';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -60,6 +62,7 @@ let selectedMood = null;
 let selectedColor = COLOR_PRESETS[0];
 let selectedIcon = '🎯';
 let modalPhotos = [];
+let pendingUpdateWorker = null;
 
 function defaultState() { return { hobbies: [], records: [] }; }
 function seedSampleHobbies() {
@@ -376,9 +379,10 @@ function renderData() {
       <button class="btn-danger" data-action="clear-data">清空全部数据</button>
     </div>
     <div class="about">
-      <div>Hobby Diary · 本地版 v1.4</div>
+      <div>Hobby Diary · 本地版 v${APP_VERSION}</div>
       <div>当前数据约 ${sizeKb} KB（${state.hobbies.length} 个爱好、${state.records.length} 条记录）</div>
-      <div>支持离线使用；通过本地服务器打开后，可在浏览器中「安装」为应用。</div>
+      <button class="link-btn" data-action="check-update">🔄 检查更新</button>
+      <div>支持离线使用；发现新版本时顶部会提示一键更新。</div>
     </div>`;
   renderAppIconPreview();
 }
@@ -721,6 +725,9 @@ function onAction(action, el) {
       toast('已恢复默认图标');
       break;
     }
+    case 'apply-update': applyUpdate(); break;
+    case 'dismiss-update': dismissUpdate(); break;
+    case 'check-update': checkForUpdates(true); break;
   }
 }
 function bindEvents() {
@@ -790,7 +797,64 @@ function toast(msg) {
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   if (!/^https?:$/.test(location.protocol)) return;
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (pendingUpdateWorker) {
+      pendingUpdateWorker = null;
+      window.location.reload();
+    }
+  });
+  navigator.serviceWorker.register('./sw.js')
+    .then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const worker = reg.installing;
+        if (!worker) return;
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+            if (sessionStorage.getItem(UPDATE_DISMISS_KEY)) return;
+            pendingUpdateWorker = worker;
+            showUpdateBanner();
+          }
+        });
+      });
+      reg.update().catch(() => {});
+    })
+    .catch(() => {});
+}
+function showUpdateBanner() {
+  const b = $('#update-banner');
+  if (b) b.classList.remove('hidden');
+}
+function applyUpdate() {
+  if (pendingUpdateWorker) {
+    pendingUpdateWorker.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    toast('已是最新版本');
+  }
+}
+function dismissUpdate() {
+  sessionStorage.setItem(UPDATE_DISMISS_KEY, '1');
+  $('#update-banner').classList.add('hidden');
+}
+async function checkForUpdates(manual) {
+  if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) {
+    toast('当前环境不支持在线更新');
+    return;
+  }
+  if (manual) toast('正在检查更新…');
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) { toast('离线版本尚未安装'); return; }
+    await reg.update();
+    if (manual) {
+      setTimeout(() => {
+        if (!pendingUpdateWorker && $('#update-banner').classList.contains('hidden')) {
+          toast('已是最新版本');
+        }
+      }, 2500);
+    }
+  } catch (err) {
+    if (manual) toast('检查更新失败，请稍后再试');
+  }
 }
 function maybeSeedDemo() {
   if (new URLSearchParams(location.search).get('demo') !== '1') return;

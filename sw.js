@@ -1,5 +1,6 @@
-// sw.js —— 爱好日记 Service Worker：缓存应用静态资源，使应用可离线使用。
-const CACHE_NAME = 'hobby-diary-v2';
+// sw.js —— Hobby Diary Service Worker：缓存应用静态资源，使应用可离线使用；支持版本更新提示。
+const APP_VERSION = '1.5';
+const CACHE_NAME = 'hobby-diary-' + APP_VERSION;
 const ASSETS = [
   './',
   './index.html',
@@ -14,7 +15,6 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
       .then(c => c.addAll(ASSETS))
-      .then(() => self.skipWaiting())
   );
 });
 
@@ -24,6 +24,11 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
+});
+
+// 收到主线程的 SKIP_WAITING 消息后接管页面，完成“点击横幅一键更新”
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', e => {
