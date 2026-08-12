@@ -12,15 +12,15 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="爱好日记">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon-192.png">
+<link rel="icon" id="favicon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=20260812">
 </head>
 <body>
 <div id="app">
   <header class="app-header">
     <div class="brand">
-      <span class="brand-logo">🌸</span>
+      <span class="brand-logo" id="brand-logo">🌸</span>
       <div class="brand-text">
         <h1>爱好日记</h1>
         <p id="header-sub"></p>
@@ -59,6 +59,11 @@
 
 <div id="toast" class="toast"></div>
 
-<script src="app.js"></script>
+<div id="lightbox" class="lightbox hidden">
+  <button class="icon-btn lightbox-close" data-action="close-lightbox" title="关闭">✕</button>
+  <img id="lightbox-img" src="" alt="照片预览">
+</div>
+
+<script src="app.js?v=20260812"></script>
 </body>
 </html>
