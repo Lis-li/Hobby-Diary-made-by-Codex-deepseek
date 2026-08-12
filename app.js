@@ -182,7 +182,6 @@ function recordRowHtml(r) {
 function renderToday() {
   const el = $('#view-today');
   if (!el) return;
-  const d = parseDate(currentDate);
   const recs = recordsOn(currentDate);
   const moods = recs.filter(r => r.mood).map(r => r.mood);
   const avg = moods.length ? (moods.reduce((a, b) => a + b, 0) / moods.length) : null;
@@ -191,8 +190,8 @@ function renderToday() {
   const nav = `
     <div class="date-nav">
       <button class="icon-btn" data-action="shift-day" data-offset="-1" title="前一天">‹</button>
-      <div class="date-center">
-        <div class="date-big">${d.getMonth() + 1}月${d.getDate()}日 <span class="week">${weekLabel(currentDate)}</span></div>
+      <div class="date-chip">
+        <span class="date-chip-ico">📅</span>
         <input type="date" class="date-input" value="${currentDate}" aria-label="选择日期">
       </div>
       <button class="icon-btn" data-action="shift-day" data-offset="1" title="后一天">›</button>

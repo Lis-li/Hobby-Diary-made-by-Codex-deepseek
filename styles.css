@@ -113,14 +113,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 
 /* ===== 今日页 ===== */
-.date-nav{display:flex;align-items:center;justify-content:space-between;margin:2px 0 12px}
-.date-center{text-align:center;min-width:0}
-.date-big{font-size:22px;font-weight:800}
-.date-big .week{font-size:13px;font-weight:500;color:var(--text-soft);margin-left:4px}
-.date-small{font-size:11px;color:var(--text-soft);margin-top:2px}
+.date-nav{display:flex;align-items:center;justify-content:center;gap:10px;margin:2px 0 12px}
+.date-chip{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card);border:2px solid var(--border);border-radius:999px;
+  padding:7px 16px;box-shadow:var(--shadow);
+}
+.date-chip-ico{font-size:16px;line-height:1}
 .date-input{
-  width:auto;max-width:150px;margin:6px auto 0;font-size:12px;
-  color:var(--text-soft);background:transparent;border:none;text-align:center;outline:none;
+  width:auto;max-width:140px;font-size:14px;font-weight:600;
+  color:var(--text);background:transparent;border:none;text-align:center;outline:none;
 }
 .day-summary{display:flex;gap:10px;margin:4px 0 14px}
 .sum-item{
