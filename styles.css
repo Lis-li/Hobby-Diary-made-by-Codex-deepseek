@@ -117,13 +117,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .date-chip{
   display:flex;align-items:center;gap:8px;
   background:var(--card);border:2px solid var(--border);border-radius:999px;
-  padding:7px 16px;box-shadow:var(--shadow);
+  padding:7px 16px;box-shadow:var(--shadow);cursor:pointer;
 }
 .date-chip-ico{font-size:16px;line-height:1}
 .date-input{
   width:auto;max-width:140px;font-size:14px;font-weight:600;
   color:var(--text);background:transparent;border:none;text-align:center;outline:none;
+  cursor:pointer;
 }
+.date-input::-webkit-calendar-picker-indicator{display:none}
+.date-input::-webkit-inner-spin-button{display:none}
 .day-summary{display:flex;gap:10px;margin:4px 0 14px}
 .sum-item{
   flex:1;background:var(--card);border-radius:14px;padding:11px 8px;
@@ -252,7 +255,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .setting-title{font-size:15px;font-weight:700;margin-bottom:6px}
 .setting-desc{font-size:12.5px;color:var(--text-soft);line-height:1.7;margin-bottom:12px}
 .btn-row{display:flex;gap:10px}
-.btn-row label.btn-secondary{flex:1;cursor:pointer}
+.btn-row .btn-secondary{flex:1;width:auto}
+.btn-row label.btn-secondary{cursor:pointer}
 .app-icon-row{display:flex;align-items:center;gap:14px}
 .app-icon-preview{width:64px;height:64px;border-radius:14px;overflow:hidden;flex:none;box-shadow:var(--shadow)}
 .app-icon-preview img{width:100%;height:100%;object-fit:cover;display:block}
@@ -305,7 +309,7 @@ textarea{resize:vertical;line-height:1.6}
   font-size:40px;overflow:hidden;
 }
 .icon-preview img{width:100%;height:100%;object-fit:cover;border-radius:16px}
-.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:12px;max-height:150px;overflow-y:auto;padding-right:2px}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:12px;max-height:180px;overflow-y:auto;padding-right:2px}
 .emoji-opt{font-size:22px;padding:6px 0;border-radius:10px;background:var(--bg-soft);border:2px solid transparent;transition:.12s}
 .emoji-opt.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--bg-soft))}
 .mood-picker{display:flex;gap:8px;margin-bottom:14px}

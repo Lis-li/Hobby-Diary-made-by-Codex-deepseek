@@ -1,6 +1,6 @@
 {
-  "name": "爱好日记 - 每日爱好记录",
-  "short_name": "爱好日记",
+  "name": "Hobby Diary - 每日爱好记录",
+  "short_name": "Hobby Diary",
   "description": "记录每日爱好的本地应用：记录、日历、统计、照片与数据备份。",
   "lang": "zh-CN",
   "start_url": "./index.html",

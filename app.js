@@ -8,7 +8,7 @@ const APP_ICON_KEY = 'hobby-diary:app-icon';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
-const EMOJI_PRESETS = ['🎨', '📚', '🏃', '🎵', '🎸', '🎹', '🎤', '🎬', '📷', '🎧', '🎮', '🕹', '🧩', '♟️', '⚽', '🏸', '🚴', '🏊', '🧗', '⛺', '🎣', '🌱', '🪴', '🍳', '☕', '✍️', '🖌', '📖', '🧵', '🧶', '🛹', '🧘', '🚶', '🗺', '🔭', '🪁', '🦋', '🌻', '🐱', '🐶'];
+const EMOJI_PRESETS = ['🎨', '📚', '🏃', '🎵', '🎸', '🎹', '🎤', '🎬', '📷', '🎧', '🎮', '🕹', '🧩', '♟️', '⚽', '🏸', '🚴', '🏊', '🧗', '⛺', '🎣', '🌱', '🪴', '🍳', '☕', '✍️', '🖌', '📖', '🧵', '🧶', '🛹', '🧘', '🚶', '🗺', '🔭', '🪁', '🦋', '🌻', '🐱', '🐶', '🏀', '🎾', '🏓', '🎳', '🥊', '⛸', '🎿', '🏂', '🚣', '🏇', '🤸', '🤹', '🪂', '🏋', '🎻', '🎷', '🎺', '🪕', '🥁', '🎼', '🎶', '🎙', '🖼', '🧑‍🎨', '📝', '🖍', '✂️', '📓', '🗞', '💻', '🖥', '🎛', '🛠', '🤖', '📹', '🎞', '🃏', '🎲', '🎯', '🪀', '🧸', '🎪', '🏝', '🏔', '🌋', '🎡', '🎢', '🚁', '🚀', '✈️', '🚂', '🛥', '🏕', '🌌', '🌷', '🍀', '🌵', '🌈', '⭐', '🔥', '🍜', '🍰', '🍪', '🍩', '🥗', '🍣', '🍹', '🦊', '🐼', '🐨', '🦁', '🐰', '🦄', '🐢', '🐬', '🦜'];
 const MOODS = [
   { v: 1, emoji: '😫', label: '很差' },
   { v: 2, emoji: '🙁', label: '不佳' },
@@ -185,6 +185,7 @@ function renderToday() {
   const recs = recordsOn(currentDate);
   const moods = recs.filter(r => r.mood).map(r => r.mood);
   const avg = moods.length ? (moods.reduce((a, b) => a + b, 0) / moods.length) : null;
+  const moodEmoji = avg ? MOODS.reduce((best, m) => Math.abs(m.v - avg) < Math.abs(best.v - avg) ? m : best, MOODS[0]).emoji : null;
   const isToday = currentDate === todayStr();
 
   const nav = `
@@ -199,7 +200,7 @@ function renderToday() {
     ${isToday ? '' : '<div class="pill-row"><button class="pill" data-action="go-today">📌 回到今天</button></div>'}
     <div class="day-summary">
       <span class="sum-item">🧩 <b>${recs.length}</b> 项</span>
-      <span class="sum-item">${avg ? `<b>${avg.toFixed(1)}</b> 心情` : '心情 --'}</span>
+      <span class="sum-item">${moodEmoji ? `<b>${moodEmoji}</b> 心情` : '心情 --'}</span>
     </div>`;
 
   const grid = state.hobbies.length
@@ -375,7 +376,7 @@ function renderData() {
       <button class="btn-danger" data-action="clear-data">清空全部数据</button>
     </div>
     <div class="about">
-      <div>爱好日记 · 本地版 v1.2</div>
+      <div>Hobby Diary · 本地版 v1.4</div>
       <div>当前数据约 ${sizeKb} KB（${state.hobbies.length} 个爱好、${state.records.length} 条记录）</div>
       <div>支持离线使用；通过本地服务器打开后，可在浏览器中「安装」为应用。</div>
     </div>`;

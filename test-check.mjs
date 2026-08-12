@@ -87,6 +87,7 @@ async function main() {
   const after = await ev(`document.querySelectorAll('#view-today .record-row').length`);
   const toastAfterAdd = await ev(`document.querySelector('#toast').textContent`);
   const noteAdded = await ev(`[...document.querySelectorAll('#view-today .rec-note')].some(n=>n.textContent.includes('测试备注'))`);
+  const moodSummary = await ev(`document.querySelector('#view-today .day-summary .sum-item:nth-child(2)').textContent.trim()`);
 
   /* 照片上传测试：添加记录 → 注入图片 → 移除 → 再添加 → 保存 */
   await ev(`document.querySelector('#view-today .bottom-actions [data-action="add-record"]').click()`);
@@ -123,6 +124,7 @@ async function main() {
   const hobbyCountBefore = await ev(`document.querySelectorAll('.hobby-item').length`);
   await ev(`document.querySelector('[data-action="add-hobby"]').click()`);
   await wait(400);
+  const emojiCount = await ev(`document.querySelectorAll('.emoji-opt').length`);
   const emojiPicked = await ev(`(()=>{const b=document.querySelector('.emoji-opt:not(.on)'); if(!b) return false; b.click(); return true;})()`);
   await ev(injectInto('#hobby-icon-input'));
   await wait(1500);
@@ -143,7 +145,7 @@ async function main() {
   await wait(200);
   const logoDefault = await ev(`document.querySelector('#brand-logo').textContent.trim() === '🌸'`);
 
-  console.log('交互结果：', JSON.stringify({ before, cardModalOpened, after, toastAfterAdd, noteAdded, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault }, null, 2));
 
   ws.close();
   proc.kill();
