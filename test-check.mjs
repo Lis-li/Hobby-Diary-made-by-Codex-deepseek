@@ -74,7 +74,7 @@ async function main() {
   console.log('JS 错误：' + (errors.length ? '\n' + errors.join('\n') : '无'));
 
   /* ===== 交互测试（在「今日」页） ===== */
-  const ev = async expr => (await send('Runtime.evaluate', { expression: expr, returnByValue: true })).result.result.value;
+  const ev = async expr => (await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result.result.value;
   const TINY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
   await send('Page.navigate', { url: BASE + 'today' });
   await wait(1000);
@@ -153,8 +153,9 @@ async function main() {
   await ev(`document.querySelector('[data-action="dismiss-update"]').click()`);
   const bannerDismissed = await ev(`document.querySelector('#update-banner').classList.contains('hidden')`);
   const versionText = await ev(`document.querySelector('#view-data .about').textContent`);
+  const remoteVersion = await ev(`fetch('version.json?t=' + Date.now()).then(r=>r.json()).then(d=>d.version)`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerShown, bannerDismissed, versionShows16: versionText.includes('v1.6') }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerShown, bannerDismissed, versionShows17: versionText.includes('v1.7'), remoteVersion }, null, 2));
 
   ws.close();
   proc.kill();

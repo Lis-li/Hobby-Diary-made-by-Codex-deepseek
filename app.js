@@ -6,7 +6,7 @@ const STORAGE_KEY = 'hobby-diary:v1';
 const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -829,10 +829,24 @@ function showUpdateBanner() {
 }
 function applyUpdate() {
   if (pendingUpdateWorker) {
+    toast('正在升级，马上回来…');
     pendingUpdateWorker.postMessage({ type: 'SKIP_WAITING' });
-  } else {
-    toast('已是最新版本');
+    return;
   }
+  // 兜底：直接检查更新并刷新
+  toast('正在升级，马上回来…');
+  navigator.serviceWorker.getRegistration()
+    .then(reg => {
+      if (!reg) { window.location.reload(); return; }
+      return reg.update().then(() => {
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        } else {
+          window.location.reload();
+        }
+      });
+    })
+    .catch(() => window.location.reload());
 }
 function dismissUpdate() {
   sessionStorage.setItem(UPDATE_DISMISS_KEY, '1');
@@ -845,16 +859,23 @@ async function checkForUpdates(manual) {
   }
   if (manual) toast('正在检查更新…');
   try {
-    const reg = await navigator.serviceWorker.getRegistration();
-    if (!reg) { toast('离线版本尚未安装'); return; }
-    await reg.update();
-    if (manual) {
-      setTimeout(() => {
-        if (!pendingUpdateWorker && $('#update-banner').classList.contains('hidden')) {
-          toast('已是最新版本');
-        }
-      }, 2500);
+    // 直接读取线上版本号，绕开浏览器与站点缓存
+    const res = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
+    const data = await res.json();
+    const remote = String(data.version || '');
+    if (remote && remote !== String(APP_VERSION)) {
+      showUpdateBanner();
+      if (manual) toast('发现新版本，点顶部横幅升级');
+      return;
     }
+    // 版本一致时，再让浏览器兜底检查一次 Service Worker
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg) reg.update().catch(() => {});
+    setTimeout(() => {
+      if (!pendingUpdateWorker && $('#update-banner').classList.contains('hidden')) {
+        toast('已是最新版本');
+      }
+    }, 1500);
   } catch (err) {
     if (manual) toast('检查更新失败，请稍后再试');
   }
