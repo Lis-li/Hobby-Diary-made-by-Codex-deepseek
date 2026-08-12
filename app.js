@@ -6,7 +6,7 @@ const STORAGE_KEY = 'hobby-diary:v1';
 const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.6';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -63,6 +63,7 @@ let selectedColor = COLOR_PRESETS[0];
 let selectedIcon = '🎯';
 let modalPhotos = [];
 let pendingUpdateWorker = null;
+let lastRenderedDate = null;
 
 function defaultState() { return { hobbies: [], records: [] }; }
 function seedSampleHobbies() {
@@ -185,6 +186,8 @@ function recordRowHtml(r) {
 function renderToday() {
   const el = $('#view-today');
   if (!el) return;
+  const bumpDate = currentDate !== lastRenderedDate;
+  lastRenderedDate = currentDate;
   const recs = recordsOn(currentDate);
   const moods = recs.filter(r => r.mood).map(r => r.mood);
   const avg = moods.length ? (moods.reduce((a, b) => a + b, 0) / moods.length) : null;
@@ -194,8 +197,8 @@ function renderToday() {
   const nav = `
     <div class="date-nav">
       <button class="icon-btn" data-action="shift-day" data-offset="-1" title="前一天">‹</button>
-      <div class="date-chip">
-        <span class="date-chip-ico">📅</span>
+      <div class="date-chip${bumpDate ? ' bump' : ''}">
+        <span class="date-chip-ico">🗓️</span>
         <input type="date" class="date-input" value="${currentDate}" aria-label="选择日期">
       </div>
       <button class="icon-btn" data-action="shift-day" data-offset="1" title="后一天">›</button>

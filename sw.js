@@ -1,5 +1,5 @@
 // sw.js —— Hobby Diary Service Worker：缓存应用静态资源，使应用可离线使用；支持版本更新提示。
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.6';
 const CACHE_NAME = 'hobby-diary-' + APP_VERSION;
 const ASSETS = [
   './',

@@ -79,6 +79,7 @@ async function main() {
   await send('Page.navigate', { url: BASE + 'today' });
   await wait(1000);
   const before = await ev(`document.querySelectorAll('#view-today .record-row').length`);
+  const chipIcon = await ev(`document.querySelector('.date-chip-ico').textContent`);
   await ev(`document.querySelector('#view-today .hobby-card[data-action="open-record"]:not(.active)').click()`);
   await wait(400);
   const cardModalOpened = await ev(`!!document.querySelector('#record-form') && document.querySelector('#record-form [name="hobbyId"]').value.length > 0`);
@@ -153,7 +154,7 @@ async function main() {
   const bannerDismissed = await ev(`document.querySelector('#update-banner').classList.contains('hidden')`);
   const versionText = await ev(`document.querySelector('#view-data .about').textContent`);
 
-  console.log('交互结果：', JSON.stringify({ before, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerShown, bannerDismissed, versionShows15: versionText.includes('v1.5') }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerShown, bannerDismissed, versionShows16: versionText.includes('v1.6') }, null, 2));
 
   ws.close();
   proc.kill();
