@@ -5,8 +5,9 @@
 const STORAGE_KEY = 'hobby-diary:v1';
 const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
+const FOCUS_KEY = 'hobby-diary:focus-session';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.9.2';
+const APP_VERSION = '1.10';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -64,6 +65,9 @@ let selectedIcon = '🎯';
 let modalPhotos = [];
 let pendingUpdateWorker = null;
 let lastRenderedDate = null;
+let focusSession = loadFocusSession();
+let focusSaveHobbyId = null;
+let focusSaveMinutes = 0;
 
 function defaultState() { return { hobbies: [], records: [] }; }
 function seedSampleHobbies() {
@@ -83,6 +87,7 @@ function normalizeRecord(r) {
     id: String(r.id || uid()),
     date: String(r.date || todayStr()),
     hobbyId: String(r.hobbyId || ''),
+    minutes: r.minutes ? Number(r.minutes) : null,
     mood: r.mood ? Number(r.mood) : null,
     note: String(r.note || '').slice(0, 500),
     photos: Array.isArray(r.photos) ? r.photos.filter(p => typeof p === 'string' && p.startsWith('data:image')).slice(0, 9) : [],
@@ -132,6 +137,7 @@ function hobbyStats(id) {
   const days = [...new Set(recs.map(r => r.date))].sort();
   return {
     count: recs.length,
+    minutes: recs.reduce((s, r) => s + (r.minutes || 0), 0),
     current: currentStreakFor(days),
     longest: longestStreakFor(days),
     last: days.length ? days[days.length - 1] : null
@@ -159,7 +165,7 @@ function renderHeader() {
 function hobbyCardHtml(h, date) {
   const rec = recordFor(date, h.id);
   const meta = rec
-    ? (rec.mood ? `${moodInfo(rec.mood).emoji} ${moodInfo(rec.mood).label}` : '已记录')
+    ? (((rec.minutes ? `${rec.minutes} 分钟` : '') + (rec.mood ? ` ${moodInfo(rec.mood).emoji} ${moodInfo(rec.mood).label}` : '')).trim() || '已记录')
     : '点击记录';
   return `<div class="hobby-card ${rec ? 'active' : ''}" style="--hcolor:${h.color}" data-action="open-record" data-hobby="${h.id}">
     <button class="hc-edit" data-action="edit-record" data-hobby="${h.id}" title="补充心情/照片/备注">✎</button>
@@ -174,7 +180,7 @@ function recordRowHtml(r) {
   return `<div class="record-row" style="--hcolor:${h ? h.color : '#bbb'}">
     ${iconTag(h, 'rec-emoji')}
     <div class="rec-main">
-      <div class="rec-name">${h ? escapeHtml(h.name) : '未知爱好'}${m ? `<span class="rec-mood">${m.emoji} ${m.label}</span>` : ''}</div>
+      <div class="rec-name">${h ? escapeHtml(h.name) : '未知爱好'}${r.minutes ? `<span class="rec-min">${r.minutes} 分钟</span>` : ''}${m ? `<span class="rec-mood">${m.emoji} ${m.label}</span>` : ''}</div>
       ${r.note ? `<div class="rec-note">${escapeHtml(r.note)}</div>` : ''}
       ${(r.photos && r.photos.length) ? `<div class="rec-photos">${r.photos.map((p, i) => `<img class="rec-photo" src="${p}" alt="照片" data-action="view-photo" data-id="${r.id}" data-index="${i}" loading="lazy">`).join('')}</div>` : ''}
     </div>
@@ -219,8 +225,97 @@ function renderToday() {
     ? `<div class="section-title">当日记录（${recs.length}）</div><div class="record-list">${recs.map(recordRowHtml).join('')}</div>`
     : `<div class="empty-card">${state.hobbies.length ? '今天还没有记录：点击上方的爱好卡片即可开始记录，或添加一条记录。' : '添加爱好后即可开始记录。'}</div>`;
 
-  el.innerHTML = nav + grid + list +
+  el.innerHTML = renderFocusCardHtml() + nav + grid + list +
     `<div class="bottom-actions"><button class="btn-primary" data-action="add-record">＋ 添加记录</button><button class="btn-secondary" data-action="go-hobbies">管理爱好</button></div>`;
+}
+
+/* ============ 专注计时（自由计时 v1） ============ */
+function loadFocusSession() {
+  try {
+    const raw = localStorage.getItem(FOCUS_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || !s.hobbyId || !s.startedAt) return null;
+    return {
+      hobbyId: String(s.hobbyId),
+      startedAt: Number(s.startedAt),
+      pausedAt: s.pausedAt ? Number(s.pausedAt) : null,
+      pausedTotalMs: Number(s.pausedTotalMs || 0),
+      running: !!s.running
+    };
+  } catch (err) { return null; }
+}
+function saveFocusSession() {
+  if (focusSession) localStorage.setItem(FOCUS_KEY, JSON.stringify(focusSession));
+  else localStorage.removeItem(FOCUS_KEY);
+}
+function clearFocusSession() {
+  focusSession = null;
+  saveFocusSession();
+}
+function focusElapsedMs(now) {
+  if (!focusSession) return 0;
+  let total = now - focusSession.startedAt - (focusSession.pausedTotalMs || 0);
+  if (!focusSession.running && focusSession.pausedAt) total -= (now - focusSession.pausedAt);
+  return Math.max(0, total);
+}
+function fmtFocusTime(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+function todayFocusMinutes() {
+  return recordsOn(todayStr()).reduce((s, r) => s + (r.minutes || 0), 0);
+}
+function renderFocusCardHtml() {
+  const todayMin = todayFocusMinutes();
+  const active = focusSession && (focusSession.running || focusSession.pausedAt);
+  if (active) {
+    const h = hobbyById(focusSession.hobbyId);
+    return `<div class="focus-card" style="--hcolor:${h ? h.color : '#FF8A65'}">
+      <div class="focus-head"><span class="focus-title">🎯 专注计时</span><span class="focus-today">今天已专注 <b>${todayMin}</b> 分钟</span></div>
+      <div class="focus-timer" id="focus-timer">${fmtFocusTime(focusElapsedMs(Date.now()))}</div>
+      <div class="focus-hobby">${h ? iconTag(h, 'focus-ico') + escapeHtml(h.name) : '未知爱好'}</div>
+      <div class="focus-actions">
+        <button class="btn-secondary" data-action="focus-pause">${focusSession.pausedAt ? '继续' : '暂停'}</button>
+        <button class="btn-primary" data-action="focus-stop">结束</button>
+      </div>
+    </div>`;
+  }
+  const opts = state.hobbies.map(h => `<option value="${h.id}">${iconText(h)} ${escapeHtml(h.name)}</option>`).join('');
+  return `<div class="focus-card" style="--hcolor:#FF8A65">
+    <div class="focus-head"><span class="focus-title">🎯 专注计时</span><span class="focus-today">今天已专注 <b>${todayMin}</b> 分钟</span></div>
+    ${state.hobbies.length
+      ? `<div class="focus-pick"><select id="focus-hobby">${opts}</select><button class="btn-primary" data-action="focus-start">开始专注</button></div>`
+      : '<div class="empty-card small">先添加爱好，再开始专注计时</div>'}
+    <div class="focus-hint">自由计时：结束时可一键把本次时长保存到今天的记录（时长不是必填，不想要直接放弃即可）。</div>
+  </div>`;
+}
+function openFocusSaveModal(hobbyId, minutes) {
+  focusSaveHobbyId = hobbyId;
+  focusSaveMinutes = minutes;
+  const h = hobbyById(hobbyId);
+  openModal('保存专注时间', `
+    <div class="form-static">${h ? iconTag(h, 'form-ico') + escapeHtml(h.name) : '未知爱好'}</div>
+    <p class="focus-save-text">本次专注了 <b>${minutes}</b> 分钟，要保存到今天的记录吗？</p>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" data-action="focus-discard">放弃</button>
+      <button type="button" class="btn-primary" data-action="focus-confirm-save">保存</button>
+    </div>`);
+}
+function saveFocusMinutes(hobbyId, minutes) {
+  const date = todayStr();
+  const existing = recordFor(date, hobbyId);
+  if (existing) {
+    existing.minutes = (existing.minutes || 0) + minutes;
+  } else {
+    state.records.push({ id: uid(), date, hobbyId, minutes, mood: null, note: '', photos: [], createdAt: Date.now() });
+  }
+  saveState();
+  toast(`已保存 ${minutes} 分钟`);
 }
 
 function renderCalendar() {
@@ -280,6 +375,9 @@ function renderStats() {
   const total = state.records.length;
   const cur = currentStreakFor(uniqueDays());
   const longest = longestStreakFor(uniqueDays());
+  const todayMin = recordsOn(todayStr()).reduce((s, r) => s + (r.minutes || 0), 0);
+  const weekStart = addDays(todayStr(), -6);
+  const weekMin = state.records.filter(r => r.date >= weekStart && r.date <= todayStr()).reduce((s, r) => s + (r.minutes || 0), 0);
 
   const bars = days14.map((d, i) => {
     const c = counts[i];
@@ -292,7 +390,7 @@ function renderStats() {
   }).join('');
 
   const ranked = state.hobbies.map(h => ({ h, s: hobbyStats(h.id) }))
-    .sort((a, b) => b.s.count - a.s.count);
+    .sort((a, b) => b.s.count - a.s.count || b.s.minutes - a.s.minutes);
   const rows = ranked.length
     ? ranked.map(({ h, s }, i) => `<div class="rank-row">
         <span class="rank-no">${i + 1}</span>
@@ -301,7 +399,7 @@ function renderStats() {
           <div class="rank-name">${escapeHtml(h.name)}</div>
           <div class="rank-sub">当前连续 ${s.current} 天 · 最长连续 ${s.longest} 天</div>
         </div>
-        <div class="rank-nums"><b>${s.count}</b> 次</div>
+        <div class="rank-nums"><b>${s.count}</b> 次<br><span class="rank-min">${s.minutes} 分钟</span></div>
       </div>`).join('')
     : '<div class="empty-card">还没有爱好数据，去今日页开始记录吧。</div>';
 
@@ -311,6 +409,8 @@ function renderStats() {
       <div class="stat-card"><b>${total}</b><span>累计记录</span></div>
       <div class="stat-card"><b>${cur}</b><span>当前连续</span></div>
       <div class="stat-card"><b>${longest}</b><span>最长连续</span></div>
+      <div class="stat-card"><b>${todayMin}</b><span>今日专注（分钟）</span></div>
+      <div class="stat-card"><b>${weekMin}</b><span>近7天专注（分钟）</span></div>
     </div>
     <div class="section-title">最近 14 天</div>
     <div class="chart">${bars}</div>
@@ -328,7 +428,7 @@ function renderHobbies() {
           ${iconTag(h, 'hobby-emoji')}
           <div class="hobby-info">
             <div class="hobby-name">${escapeHtml(h.name)}</div>
-            <div class="hobby-stats">${s.count} 次 · 连续 ${s.current} 天</div>
+            <div class="hobby-stats">${s.count} 次 · ${s.minutes} 分钟 · 连续 ${s.current} 天</div>
           </div>
           <div class="hobby-actions">
             <button data-action="edit-hobby" data-id="${h.id}" title="编辑">✎</button>
@@ -734,6 +834,53 @@ function onAction(action, el) {
     case 'dismiss-update': dismissUpdate(); break;
     case 'check-update': checkForUpdates(true); break;
     case 'toggle-music': MusicPlayer.toggle(); break;
+    case 'focus-start': {
+      const hobbyId = $('#focus-hobby') ? $('#focus-hobby').value : '';
+      if (!hobbyId || !hobbyById(hobbyId)) { toast('请先选择爱好'); return; }
+      focusSession = { hobbyId, startedAt: Date.now(), pausedAt: null, pausedTotalMs: 0, running: true };
+      saveFocusSession();
+      renderAll();
+      toast('开始专注 🎯');
+      break;
+    }
+    case 'focus-pause': {
+      if (!focusSession) return;
+      if (focusSession.pausedAt) {
+        focusSession.pausedTotalMs += Date.now() - focusSession.pausedAt;
+        focusSession.pausedAt = null;
+        focusSession.running = true;
+        toast('继续计时');
+      } else {
+        focusSession.pausedAt = Date.now();
+        focusSession.running = false;
+        toast('已暂停');
+      }
+      saveFocusSession();
+      renderAll();
+      break;
+    }
+    case 'focus-stop': {
+      if (!focusSession) return;
+      const minutes = Math.max(1, Math.round(focusElapsedMs(Date.now()) / 60000));
+      openFocusSaveModal(focusSession.hobbyId, minutes);
+      break;
+    }
+    case 'focus-confirm-save': {
+      const hobbyId = focusSaveHobbyId;
+      const minutes = focusSaveMinutes;
+      clearFocusSession();
+      closeModal();
+      saveFocusMinutes(hobbyId, minutes);
+      renderAll();
+      break;
+    }
+    case 'focus-discard': {
+      clearFocusSession();
+      closeModal();
+      renderAll();
+      toast('已放弃本次计时');
+      break;
+    }
   }
 }
 function bindEvents() {
@@ -891,6 +1038,7 @@ async function checkForUpdates(manual) {
 function maybeSeedDemo() {
   if (new URLSearchParams(location.search).get('demo') !== '1') return;
   if (!state.hobbies.length || state.records.length) return;
+  const mins = [30, 45, 60, 90, 120];
   const notes = ['今天状态不错', '专注的一小时', '有点累但很充实', '慢慢来，不急', '享受其中'];
   const demo = [];
   for (let i = 29; i >= 0; i--) {
@@ -899,7 +1047,7 @@ function maybeSeedDemo() {
     const count = 1 + (i % 3);
     for (let k = 0; k < count; k++) {
       const h = state.hobbies[(i + k) % state.hobbies.length];
-      demo.push({ id: uid(), date, hobbyId: h.id, mood: (i % 5) + 1, note: notes[i % notes.length], createdAt: Date.now() - i * 86400000 });
+      demo.push({ id: uid(), date, hobbyId: h.id, minutes: mins[(i + k) % mins.length], mood: (i % 5) + 1, note: notes[i % notes.length], createdAt: Date.now() - i * 86400000 });
     }
   }
   state.records = demo;
@@ -915,6 +1063,13 @@ function init() {
   applyAppIcon();
   bindEvents();
   setTab(activeTab, false);
+  if (focusSession && !hobbyById(focusSession.hobbyId)) clearFocusSession();
+  setInterval(() => {
+    const el = $('#focus-timer');
+    if (el && focusSession && focusSession.running && !focusSession.pausedAt) {
+      el.textContent = fmtFocusTime(focusElapsedMs(Date.now()));
+    }
+  }, 1000);
   renderAll();
   registerSW();
 }

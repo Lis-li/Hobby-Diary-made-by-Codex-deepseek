@@ -87,6 +87,24 @@ async function main() {
   await ev(`document.querySelector('[data-action="toggle-music"]').click()`);
   await wait(200);
   const musicBtnOn = await ev(`document.querySelector('#music-toggle').textContent`);
+  const focusCardExists = await ev(`!!document.querySelector('.focus-card')`);
+  await ev(`document.querySelector('[data-action="focus-start"]').click()`);
+  await wait(2500);
+  const focusTimerRunning = await ev(`!!document.querySelector('#focus-timer')`);
+  const focusTimeText = await ev(`document.querySelector('#focus-timer').textContent`);
+  await ev(`document.querySelector('[data-action="focus-pause"]').click()`);
+  await wait(200);
+  const focusPaused = await ev(`document.querySelector('[data-action="focus-pause"]').textContent === '继续'`);
+  await ev(`document.querySelector('[data-action="focus-pause"]').click()`);
+  await wait(200);
+  await ev(`document.querySelector('[data-action="focus-stop"]').click()`);
+  await wait(300);
+  const focusSaveModal = await ev(`!document.querySelector('#modal-backdrop').classList.contains('hidden') && !!document.querySelector('[data-action="focus-confirm-save"]')`);
+  const focusSaveText = await ev(`document.querySelector('.focus-save-text').textContent.trim()`);
+  await ev(`document.querySelector('[data-action="focus-confirm-save"]').click()`);
+  await wait(400);
+  const focusMinShown = await ev(`(()=>{const m=document.querySelector('#view-today .rec-min'); return m ? m.textContent.trim() : null;})()`);
+  const focusTodayText = await ev(`document.querySelector('.focus-today').textContent.trim()`);
   await ev(`document.querySelector('#view-today .hobby-card[data-action="open-record"]:not(.active)').click()`);
   await wait(400);
   const cardModalOpened = await ev(`!!document.querySelector('#record-form') && document.querySelector('#record-form [name="hobbyId"]').value.length > 0`);
@@ -164,7 +182,7 @@ async function main() {
   const remoteVersion = await ev(`fetch('version.json?t=' + Date.now()).then(r=>r.json()).then(d=>d.version)`);
   const versionTag = await ev(`document.querySelector('#version-tag').textContent`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, versionShows192: versionText.includes('v1.9.2'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, versionShows110: versionText.includes('v1.10'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();

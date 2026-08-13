@@ -35,8 +35,8 @@ AGENTS.md             本说明
 ## 数据模型
 
 - hobbies：`{ id, name, emoji, color, createdAt }`，其中 emoji 可以是 Emoji 字符，也可以是上传图片压缩后的 data URL
-- records：`{ id, date(YYYY-MM-DD), hobbyId, mood(1-5), note, photos(data URL 数组，最多 9 张), createdAt }`
-- localStorage 键：`hobby-diary:v1`（数据）、`hobby-diary:theme`（主题）、`hobby-diary:app-icon`（自定义应用图标）
+- records：`{ id, date(YYYY-MM-DD), hobbyId, minutes(可选), mood(1-5), note, photos(data URL 数组，最多 9 张), createdAt }`
+- localStorage 键：`hobby-diary:v1`（数据）、`hobby-diary:theme`（主题）、`hobby-diary:app-icon`（自定义应用图标）、`hobby-diary:focus-session`（专注计时会话，含开始/暂停时间戳，用于锁屏或重开页面后恢复计时）
 
 ## 代码规范
 
