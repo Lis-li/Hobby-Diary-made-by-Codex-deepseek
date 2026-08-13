@@ -7,7 +7,7 @@ const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const FOCUS_KEY = 'hobby-diary:focus-session';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.10';
+const APP_VERSION = '1.10.1';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -225,7 +225,7 @@ function renderToday() {
     ? `<div class="section-title">当日记录（${recs.length}）</div><div class="record-list">${recs.map(recordRowHtml).join('')}</div>`
     : `<div class="empty-card">${state.hobbies.length ? '今天还没有记录：点击上方的爱好卡片即可开始记录，或添加一条记录。' : '添加爱好后即可开始记录。'}</div>`;
 
-  el.innerHTML = renderFocusCardHtml() + nav + grid + list +
+  el.innerHTML = nav + renderFocusCardHtml() + grid + list +
     `<div class="bottom-actions"><button class="btn-primary" data-action="add-record">＋ 添加记录</button><button class="btn-secondary" data-action="go-hobbies">管理爱好</button></div>`;
 }
 

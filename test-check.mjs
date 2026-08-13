@@ -88,6 +88,7 @@ async function main() {
   await wait(200);
   const musicBtnOn = await ev(`document.querySelector('#music-toggle').textContent`);
   const focusCardExists = await ev(`!!document.querySelector('.focus-card')`);
+  const focusAfterNav = await ev(`document.querySelector('#view-today .date-nav').compareDocumentPosition(document.querySelector('#view-today .focus-card')) & Node.DOCUMENT_POSITION_FOLLOWING`);
   await ev(`document.querySelector('[data-action="focus-start"]').click()`);
   await wait(2500);
   const focusTimerRunning = await ev(`!!document.querySelector('#focus-timer')`);
@@ -182,7 +183,7 @@ async function main() {
   const remoteVersion = await ev(`fetch('version.json?t=' + Date.now()).then(r=>r.json()).then(d=>d.version)`);
   const versionTag = await ev(`document.querySelector('#version-tag').textContent`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, versionShows110: versionText.includes('v1.10'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, versionShows1101: versionText.includes('v1.10.1'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();
