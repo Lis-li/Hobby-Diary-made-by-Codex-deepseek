@@ -88,15 +88,20 @@ const MusicPlayer = (() => {
     chordTimer = setTimeout(scheduleChord, CHORD_SECONDS * 1000);
   }
 
+  function startMusicIfIdle() {
+    if (muted || playing) return;
+    if (!ctx || ctx.state !== 'running') return;
+    playing = true;
+    scheduleChord();
+    document.dispatchEvent(new CustomEvent('hobby-music-started'));
+  }
+
   function start() {
     if (muted) return;
     ensureCtx();
     if (!ctx) return;
-    ctx.resume().catch(() => {});
-    if (!playing) {
-      playing = true;
-      scheduleChord();
-    }
+    // 等音频上下文真正恢复运行后再开始排程（iOS 必须在用户手势内恢复）
+    ctx.resume().then(startMusicIfIdle).catch(() => {});
   }
 
   function stop() {
@@ -124,27 +129,8 @@ const MusicPlayer = (() => {
   function init() {
     refreshButton();
     if (!muted) start(); // 尝试自动播放；被浏览器拦截时由首次点击兜底
-    const kick = () => {
-      if (muted) return;
-      ensureCtx();
-      if (!ctx) return;
-      if (ctx.state === 'suspended') {
-        // 自动播放被拦截：在用户手势内恢复音频，恢复成功后再开始排程，确保音乐真正响起
-        clearTimeout(chordTimer);
-        playing = false;
-        ctx.resume().then(() => {
-          if (!muted && !playing) {
-            playing = true;
-            scheduleChord();
-          }
-        }).catch(() => {});
-      } else if (!playing) {
-        playing = true;
-        scheduleChord();
-      }
-    };
     // 兼容多种手机浏览器的手势事件（iOS/安卓的 Safari、Chrome 等）
-    ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evt => document.addEventListener(evt, kick));
+    ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evt => document.addEventListener(evt, () => { if (!muted) start(); }));
   }
 
   return { init, toggle, refreshButton, isPending };
