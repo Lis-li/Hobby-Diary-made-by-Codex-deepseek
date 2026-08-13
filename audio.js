@@ -127,15 +127,24 @@ const MusicPlayer = (() => {
     const kick = () => {
       if (muted) return;
       ensureCtx();
-      // 自动播放被拦截后，首次点击时重置排程再重新开始，确保音乐真正响起
-      if (ctx && ctx.state === 'suspended' && playing) {
+      if (!ctx) return;
+      if (ctx.state === 'suspended') {
+        // 自动播放被拦截：在用户手势内恢复音频，恢复成功后再开始排程，确保音乐真正响起
         clearTimeout(chordTimer);
         playing = false;
+        ctx.resume().then(() => {
+          if (!muted && !playing) {
+            playing = true;
+            scheduleChord();
+          }
+        }).catch(() => {});
+      } else if (!playing) {
+        playing = true;
+        scheduleChord();
       }
-      start();
     };
-    document.addEventListener('pointerdown', kick);
-    document.addEventListener('keydown', kick);
+    // 兼容多种手机浏览器的手势事件（iOS/安卓的 Safari、Chrome 等）
+    ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evt => document.addEventListener(evt, kick));
   }
 
   return { init, toggle, refreshButton, isPending };

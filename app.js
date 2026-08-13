@@ -7,7 +7,7 @@ const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const FOCUS_KEY = 'hobby-diary:focus-session';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.10.3';
+const APP_VERSION = '1.10.4';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -20,6 +20,7 @@ const MOODS = [
   { v: 5, emoji: '🤩', label: '超棒' }
 ];
 const CHANGELOG = [
+  { v: 'v1.10.4', text: '继续修背景音乐：兼容更多手机浏览器，打开后点一下屏幕就能响起。' },
   { v: 'v1.10.3', text: '修好了手机上的背景音乐：打开后点一下屏幕就能响起；数据页和专注计时都可以收起来，页面更清爽。' },
   { v: 'v1.10.2', text: '新增「更新说明」：在数据页可以看到每次更新都加了什么；背景音乐的音量调大了一些。' },
   { v: 'v1.10.1', text: '调整了今日页的显示顺序，日期选择放在最上面。' },
@@ -172,10 +173,8 @@ function renderAll() {
   renderData();
 }
 function renderHeader() {
-  const chip = $('#streak-chip');
-  if (chip) chip.textContent = `🔥 连续 ${currentStreakFor(uniqueDays())} 天`;
   const sub = $('#header-sub');
-  if (sub) sub.textContent = `${fmtCnDate(todayStr())} ${weekLabel(todayStr())} · 累计 ${state.records.length} 条记录`;
+  if (sub) sub.textContent = `🔥 连续 ${currentStreakFor(uniqueDays())} 天 · ${fmtCnDate(todayStr())} ${weekLabel(todayStr())} · 累计 ${state.records.length} 条记录`;
   const tag = $('#version-tag');
   if (tag) tag.textContent = 'v' + APP_VERSION;
 }
