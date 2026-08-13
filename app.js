@@ -7,7 +7,7 @@ const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const FOCUS_KEY = 'hobby-diary:focus-session';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.10.2';
+const APP_VERSION = '1.10.3';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -20,6 +20,7 @@ const MOODS = [
   { v: 5, emoji: '🤩', label: '超棒' }
 ];
 const CHANGELOG = [
+  { v: 'v1.10.3', text: '修好了手机上的背景音乐：打开后点一下屏幕就能响起；数据页和专注计时都可以收起来，页面更清爽。' },
   { v: 'v1.10.2', text: '新增「更新说明」：在数据页可以看到每次更新都加了什么；背景音乐的音量调大了一些。' },
   { v: 'v1.10.1', text: '调整了今日页的显示顺序，日期选择放在最上面。' },
   { v: 'v1.10', text: '新增「专注计时」：选个爱好开始计时，结束时可以一键把时长存进当天的记录（时间不是必填，也可以放弃）。' },
@@ -34,6 +35,7 @@ const CHANGELOG = [
   { v: 'v1.2', text: '取消了“打卡”，点爱好卡片直接记一条；每条记录可以上传最多 9 张照片；爱好图标可以选 Emoji 或自己传图。' },
   { v: 'v1.0', text: '第一个版本：记录每天的爱好的 app，可以看日历、统计，还能备份数据。' }
 ];
+const dataPanels = { backup: false, changelog: false, icon: false, theme: false, danger: false };
 const SAMPLE_HOBBIES = [
   { name: '画画', emoji: '🎨', color: '#5C6BC0' },
   { name: '阅读', emoji: '📚', color: '#4CAF50' },
@@ -83,6 +85,7 @@ let lastRenderedDate = null;
 let focusSession = loadFocusSession();
 let focusSaveHobbyId = null;
 let focusSaveMinutes = 0;
+let focusCardOpen = false;
 
 function defaultState() { return { hobbies: [], records: [] }; }
 function seedSampleHobbies() {
@@ -288,25 +291,32 @@ function todayFocusMinutes() {
 function renderFocusCardHtml() {
   const todayMin = todayFocusMinutes();
   const active = focusSession && (focusSession.running || focusSession.pausedAt);
+  const open = active || focusCardOpen;
+  const head = `<button class="focus-head" data-action="toggle-focus-card">
+      <span class="focus-title">🎯 专注计时</span>
+      <span class="focus-today">今天已专注 <b>${todayMin}</b> 分钟</span>
+      <span class="setting-arrow">▾</span>
+    </button>`;
+  let body;
   if (active) {
     const h = hobbyById(focusSession.hobbyId);
-    return `<div class="focus-card" style="--hcolor:${h ? h.color : '#FF8A65'}">
-      <div class="focus-head"><span class="focus-title">🎯 专注计时</span><span class="focus-today">今天已专注 <b>${todayMin}</b> 分钟</span></div>
+    body = `
       <div class="focus-timer" id="focus-timer">${fmtFocusTime(focusElapsedMs(Date.now()))}</div>
       <div class="focus-hobby">${h ? iconTag(h, 'focus-ico') + escapeHtml(h.name) : '未知爱好'}</div>
       <div class="focus-actions">
         <button class="btn-secondary" data-action="focus-pause">${focusSession.pausedAt ? '继续' : '暂停'}</button>
         <button class="btn-primary" data-action="focus-stop">结束</button>
-      </div>
-    </div>`;
+      </div>`;
+  } else {
+    const opts = state.hobbies.map(h => `<option value="${h.id}">${iconText(h)} ${escapeHtml(h.name)}</option>`).join('');
+    body = state.hobbies.length
+      ? `<div class="focus-pick"><select id="focus-hobby">${opts}</select><button class="btn-primary" data-action="focus-start">开始专注</button></div>
+         <div class="focus-hint">自由计时：结束时可一键把本次时长保存到今天的记录（时长不是必填，不想要直接放弃即可）。</div>`
+      : '<div class="empty-card small">先添加爱好，再开始专注计时</div>';
   }
-  const opts = state.hobbies.map(h => `<option value="${h.id}">${iconText(h)} ${escapeHtml(h.name)}</option>`).join('');
-  return `<div class="focus-card" style="--hcolor:#FF8A65">
-    <div class="focus-head"><span class="focus-title">🎯 专注计时</span><span class="focus-today">今天已专注 <b>${todayMin}</b> 分钟</span></div>
-    ${state.hobbies.length
-      ? `<div class="focus-pick"><select id="focus-hobby">${opts}</select><button class="btn-primary" data-action="focus-start">开始专注</button></div>`
-      : '<div class="empty-card small">先添加爱好，再开始专注计时</div>'}
-    <div class="focus-hint">自由计时：结束时可一键把本次时长保存到今天的记录（时长不是必填，不想要直接放弃即可）。</div>
+  return `<div class="focus-card collapsible ${open ? 'open' : ''}" style="--hcolor:#FF8A65">
+    ${head}
+    <div class="setting-body focus-body">${body}</div>
   </div>`;
 }
 function openFocusSaveModal(hobbyId, minutes) {
@@ -459,6 +469,16 @@ function renderHobbies() {
     <div class="tip-card">💡 在「今日」页点击爱好卡片即可开始记录；卡片角落的 ✎ 可补充时长、心情、照片和备注。</div>`;
 }
 
+function panelCard(key, title, bodyHtml, extraClass) {
+  const open = !!dataPanels[key];
+  return `<div class="setting-card collapsible ${open ? 'open' : ''} ${extraClass || ''}">
+    <button class="setting-head" data-action="toggle-panel" data-panel="${key}">
+      <span class="setting-title">${title}</span>
+      <span class="setting-arrow">▾</span>
+    </button>
+    <div class="setting-body">${bodyHtml}</div>
+  </div>`;
+}
 function renderData() {
   const el = $('#view-data');
   if (!el) return;
@@ -466,21 +486,16 @@ function renderData() {
   const theme = localStorage.getItem(THEME_KEY) || 'light';
   el.innerHTML = `
     <div class="page-head"><h2>数据与设置</h2></div>
-    <div class="setting-card">
-      <div class="setting-title">💾 数据备份</div>
+    ${panelCard('backup', '💾 数据备份', `
       <p class="setting-desc">数据保存在当前浏览器的本地存储中，建议定期导出备份；换设备或换浏览器时再导入即可恢复。</p>
       <div class="btn-row">
         <button class="btn-secondary" data-action="export-data">⬇ 导出 JSON</button>
         <label class="btn-secondary">⬆ 导入 JSON<input type="file" id="import-file" accept=".json,application/json" hidden></label>
-      </div>
-    </div>
-    <div class="setting-card">
-      <div class="setting-title">📜 更新说明</div>
+      </div>`)}
+    ${panelCard('changelog', '📜 更新说明', `
       <p class="setting-desc">每次更新加了什么、修了什么，都记在这里。</p>
-      <button class="btn-secondary" data-action="open-changelog">查看更新说明</button>
-    </div>
-    <div class="setting-card">
-      <div class="setting-title">🖼 应用图标</div>
+      <button class="btn-secondary" data-action="open-changelog">查看更新说明</button>`)}
+    ${panelCard('icon', '🖼 应用图标', `
       <p class="setting-desc">上传一张图片作为应用图标（显示在首页和浏览器标签页）。安装到手机桌面后的图标是项目里的固定文件，想换成你自己的图，把图片发给我替换即可。</p>
       <div class="app-icon-row">
         <div class="app-icon-preview" id="app-icon-preview"></div>
@@ -489,20 +504,15 @@ function renderData() {
           <button class="btn-secondary" data-action="reset-app-icon">↺ 恢复默认</button>
         </div>
       </div>
-      <input type="file" id="app-icon-input" accept="image/*" hidden>
-    </div>
-    <div class="setting-card">
-      <div class="setting-title">🕶 外观</div>
+      <input type="file" id="app-icon-input" accept="image/*" hidden>`)}
+    ${panelCard('theme', '🕶 外观', `
       <div class="btn-row">
         <button class="btn-secondary ${theme === 'light' ? 'on' : ''}" data-action="set-theme" data-theme="light">☀️ 浅色</button>
         <button class="btn-secondary ${theme === 'dark' ? 'on' : ''}" data-action="set-theme" data-theme="dark">🌙 深色</button>
-      </div>
-    </div>
-    <div class="setting-card danger">
-      <div class="setting-title">🗑 清空全部数据</div>
+      </div>`)}
+    ${panelCard('danger', '🗑 清空全部数据', `
       <p class="setting-desc">删除所有爱好和记录，且无法恢复。请先导出备份。</p>
-      <button class="btn-danger" data-action="clear-data">清空全部数据</button>
-    </div>
+      <button class="btn-danger" data-action="clear-data">清空全部数据</button>`, 'danger')}
     <div class="about">
       <div>Hobby Diary · 本地版 v${APP_VERSION}</div>
       <div>当前数据约 ${sizeKb} KB（${state.hobbies.length} 个爱好、${state.records.length} 条记录）</div>
@@ -858,6 +868,21 @@ function onAction(action, el) {
       openModal('更新说明', `<div class="changelog">${CHANGELOG.map(item => `<div class="cl-item"><span class="cl-v">${item.v}</span><p>${item.text}</p></div>`).join('')}</div>`);
       break;
     }
+    case 'toggle-panel': {
+      if (Object.prototype.hasOwnProperty.call(dataPanels, el.dataset.panel)) {
+        dataPanels[el.dataset.panel] = !dataPanels[el.dataset.panel];
+        renderData();
+      }
+      break;
+    }
+    case 'toggle-focus-card': {
+      const active = focusSession && (focusSession.running || focusSession.pausedAt);
+      if (!active) {
+        focusCardOpen = !focusCardOpen;
+        renderAll();
+      }
+      break;
+    }
     case 'focus-start': {
       const hobbyId = $('#focus-hobby') ? $('#focus-hobby').value : '';
       if (!hobbyId || !hobbyById(hobbyId)) { toast('请先选择爱好'); return; }
@@ -1088,6 +1113,11 @@ function init() {
   bindEvents();
   setTab(activeTab, false);
   if (focusSession && !hobbyById(focusSession.hobbyId)) clearFocusSession();
+  setTimeout(() => {
+    if (typeof MusicPlayer.isPending === 'function' && MusicPlayer.isPending()) {
+      toast('🎵 点一下屏幕即可开启背景音乐');
+    }
+  }, 1500);
   setInterval(() => {
     const el = $('#focus-timer');
     if (el && focusSession && focusSession.running && !focusSession.pausedAt) {

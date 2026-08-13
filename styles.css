@@ -136,7 +136,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   background:var(--card);border-radius:18px;padding:16px;margin:4px 0 14px;
   box-shadow:var(--shadow);border-left:4px solid var(--hcolor,#FF8A65);
 }
-.focus-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.focus-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  width:100%;padding:0;background:none;border:none;cursor:pointer;text-align:left;touch-action:manipulation;
+}
 .focus-title{font-size:15px;font-weight:700}
 .focus-today{font-size:11.5px;color:var(--text-soft)}
 .focus-today b{font-size:14px;color:var(--text)}
@@ -282,6 +285,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .setting-card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
 .setting-card.danger{border:1.5px solid color-mix(in srgb,var(--danger) 45%,transparent)}
 .setting-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.setting-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  width:100%;padding:0;background:none;border:none;cursor:pointer;touch-action:manipulation;
+}
+.setting-head .setting-title{margin-bottom:0}
+.setting-arrow{font-size:14px;color:var(--text-soft);transition:transform .2s;flex:none}
+.collapsible.open .setting-arrow{transform:rotate(180deg)}
+.setting-body{display:none;padding-top:12px}
+.collapsible.open .setting-body{display:block}
 .setting-desc{font-size:12.5px;color:var(--text-soft);line-height:1.7;margin-bottom:12px}
 .btn-row{display:flex;gap:10px}
 .btn-row .btn-secondary{flex:1;width:auto}

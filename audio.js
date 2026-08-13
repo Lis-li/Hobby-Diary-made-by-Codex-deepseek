@@ -89,12 +89,14 @@ const MusicPlayer = (() => {
   }
 
   function start() {
-    if (muted || playing) return;
+    if (muted) return;
     ensureCtx();
     if (!ctx) return;
     ctx.resume().catch(() => {});
-    playing = true;
-    scheduleChord();
+    if (!playing) {
+      playing = true;
+      scheduleChord();
+    }
   }
 
   function stop() {
@@ -115,15 +117,28 @@ const MusicPlayer = (() => {
     if (b) b.textContent = muted ? '🔇' : '🎵';
   }
 
+  function isPending() {
+    return !!ctx && ctx.state === 'suspended' && !muted;
+  }
+
   function init() {
     refreshButton();
     if (!muted) start(); // 尝试自动播放；被浏览器拦截时由首次点击兜底
-    const kick = () => { if (!muted) start(); };
+    const kick = () => {
+      if (muted) return;
+      ensureCtx();
+      // 自动播放被拦截后，首次点击时重置排程再重新开始，确保音乐真正响起
+      if (ctx && ctx.state === 'suspended' && playing) {
+        clearTimeout(chordTimer);
+        playing = false;
+      }
+      start();
+    };
     document.addEventListener('pointerdown', kick);
     document.addEventListener('keydown', kick);
   }
 
-  return { init, toggle, refreshButton };
+  return { init, toggle, refreshButton, isPending };
 })();
 
 document.addEventListener('DOMContentLoaded', () => MusicPlayer.init());
