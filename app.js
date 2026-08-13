@@ -7,7 +7,7 @@ const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const FOCUS_KEY = 'hobby-diary:focus-session';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.10.1';
+const APP_VERSION = '1.10.2';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -18,6 +18,21 @@ const MOODS = [
   { v: 3, emoji: '😐', label: '一般' },
   { v: 4, emoji: '🙂', label: '不错' },
   { v: 5, emoji: '🤩', label: '超棒' }
+];
+const CHANGELOG = [
+  { v: 'v1.10.2', text: '新增「更新说明」：在数据页可以看到每次更新都加了什么；背景音乐的音量调大了一些。' },
+  { v: 'v1.10.1', text: '调整了今日页的显示顺序，日期选择放在最上面。' },
+  { v: 'v1.10', text: '新增「专注计时」：选个爱好开始计时，结束时可以一键把时长存进当天的记录（时间不是必填，也可以放弃）。' },
+  { v: 'v1.9.2', text: '新增背景音乐（打开就自动播放，右上角可以静音）；手机上的输入框变得更好用，不会再自动放大页面。' },
+  { v: 'v1.9', text: '修好了一个问题：更新提示横幅之前点不动，现在可以点了。' },
+  { v: 'v1.8', text: '标题旁边可以看到当前版本号。' },
+  { v: 'v1.7', text: '修好了一个问题：之前提示“已经是最新版本”其实还没更新，现在检查更准确。' },
+  { v: 'v1.6', text: '换了日历图标，加了一些小动画。' },
+  { v: 'v1.5', text: '新增自动更新：有新版本时顶部会弹出提示，点一下就能升级。' },
+  { v: 'v1.4', text: '应用改名为 Hobby Diary；心情用表情显示；Emoji 图标更多了。' },
+  { v: 'v1.3', text: '日期选择改成更小巧的样子。' },
+  { v: 'v1.2', text: '取消了“打卡”，点爱好卡片直接记一条；每条记录可以上传最多 9 张照片；爱好图标可以选 Emoji 或自己传图。' },
+  { v: 'v1.0', text: '第一个版本：记录每天的爱好的 app，可以看日历、统计，还能备份数据。' }
 ];
 const SAMPLE_HOBBIES = [
   { name: '画画', emoji: '🎨', color: '#5C6BC0' },
@@ -460,6 +475,11 @@ function renderData() {
       </div>
     </div>
     <div class="setting-card">
+      <div class="setting-title">📜 更新说明</div>
+      <p class="setting-desc">每次更新加了什么、修了什么，都记在这里。</p>
+      <button class="btn-secondary" data-action="open-changelog">查看更新说明</button>
+    </div>
+    <div class="setting-card">
       <div class="setting-title">🖼 应用图标</div>
       <p class="setting-desc">上传一张图片作为应用图标（显示在首页和浏览器标签页）。安装到手机桌面后的图标是项目里的固定文件，想换成你自己的图，把图片发给我替换即可。</p>
       <div class="app-icon-row">
@@ -834,6 +854,10 @@ function onAction(action, el) {
     case 'dismiss-update': dismissUpdate(); break;
     case 'check-update': checkForUpdates(true); break;
     case 'toggle-music': MusicPlayer.toggle(); break;
+    case 'open-changelog': {
+      openModal('更新说明', `<div class="changelog">${CHANGELOG.map(item => `<div class="cl-item"><span class="cl-v">${item.v}</span><p>${item.text}</p></div>`).join('')}</div>`);
+      break;
+    }
     case 'focus-start': {
       const hobbyId = $('#focus-hobby') ? $('#focus-hobby').value : '';
       if (!hobbyId || !hobbyById(hobbyId)) { toast('请先选择爱好'); return; }

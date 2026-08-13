@@ -26,7 +26,7 @@ const MusicPlayer = (() => {
     if (!AC) return;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = 0.14;
+    master.gain.value = 0.26;
     filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = 1200;

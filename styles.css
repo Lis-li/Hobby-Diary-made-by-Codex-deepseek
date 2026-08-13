@@ -292,6 +292,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .app-icon-row .btn-row{flex:1;flex-direction:column;gap:8px}
 .about{font-size:11.5px;color:var(--text-soft);text-align:center;line-height:2;margin-top:18px}
 .about .link-btn{font-size:12px;color:var(--accent);margin:2px 0}
+.changelog{display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow-y:auto}
+.cl-item{display:flex;gap:10px;background:var(--bg-soft);border-radius:12px;padding:10px 12px}
+.cl-v{flex:none;font-size:12px;font-weight:700;color:var(--accent);min-width:58px;padding-top:1px}
+.cl-item p{font-size:13px;color:var(--text);line-height:1.6}
 
 /* ===== 弹窗 ===== */
 .modal-backdrop{
