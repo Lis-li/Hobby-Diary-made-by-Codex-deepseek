@@ -17,6 +17,7 @@
 index.html            主页面（含弹窗、照片查看器结构）
 styles.css            样式
 app.js                核心逻辑（数据管理、视图渲染、交互）
+audio.js              背景音乐引擎（Web Audio 实时合成，无需音频文件）
 sw.js                 离线缓存 Service Worker
 serve.js              本地服务器（启动时打印手机访问地址）
 test-check.mjs        无头 Chrome + CDP 冒烟测试

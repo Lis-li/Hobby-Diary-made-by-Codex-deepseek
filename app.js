@@ -6,7 +6,7 @@ const STORAGE_KEY = 'hobby-diary:v1';
 const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.9';
+const APP_VERSION = '1.9.2';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -733,6 +733,7 @@ function onAction(action, el) {
     case 'apply-update': applyUpdate(); break;
     case 'dismiss-update': dismissUpdate(); break;
     case 'check-update': checkForUpdates(true); break;
+    case 'toggle-music': MusicPlayer.toggle(); break;
   }
 }
 function bindEvents() {

@@ -80,6 +80,13 @@ async function main() {
   await wait(1000);
   const before = await ev(`document.querySelectorAll('#view-today .record-row').length`);
   const chipIcon = await ev(`document.querySelector('.date-chip-ico').textContent`);
+  const musicBtnInit = await ev(`document.querySelector('#music-toggle').textContent`);
+  await ev(`document.querySelector('[data-action="toggle-music"]').click()`);
+  await wait(200);
+  const musicBtnMuted = await ev(`document.querySelector('#music-toggle').textContent`);
+  await ev(`document.querySelector('[data-action="toggle-music"]').click()`);
+  await wait(200);
+  const musicBtnOn = await ev(`document.querySelector('#music-toggle').textContent`);
   await ev(`document.querySelector('#view-today .hobby-card[data-action="open-record"]:not(.active)').click()`);
   await wait(400);
   const cardModalOpened = await ev(`!!document.querySelector('#record-form') && document.querySelector('#record-form [name="hobbyId"]').value.length > 0`);
@@ -157,7 +164,7 @@ async function main() {
   const remoteVersion = await ev(`fetch('version.json?t=' + Date.now()).then(r=>r.json()).then(d=>d.version)`);
   const versionTag = await ev(`document.querySelector('#version-tag').textContent`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, versionShows19: versionText.includes('v1.9'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, versionShows192: versionText.includes('v1.9.2'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();
