@@ -141,6 +141,10 @@ async function main() {
   const lightboxOpened = await ev(`!document.querySelector('#lightbox').classList.contains('hidden') && document.querySelector('#lightbox-img').src.length > 0`);
   await ev(`document.querySelector('[data-action="close-lightbox"]').click()`);
   const lightboxClosed = await ev(`document.querySelector('#lightbox').classList.contains('hidden')`);
+  await ev(`location.reload()`);
+  await wait(2500);
+  const photoAfterReload = await ev(`document.querySelectorAll('#view-today .rec-photo').length`);
+  const photoSrcAfterReload = await ev(`(()=>{const img=document.querySelector('#view-today .rec-photo'); return img ? img.src.length > 0 : false;})()`);
 
   /* 编辑已有记录测试 */
   const modalOpened = await ev(`(()=>{const b=document.querySelector('#view-today .rec-actions [data-action="edit-record"]'); if(!b) return false; b.click(); return !document.querySelector('#modal-backdrop').classList.contains('hidden') && !!document.querySelector('#record-form');})()`);
@@ -167,24 +171,18 @@ async function main() {
   const hobbyCountAfter = await ev(`document.querySelectorAll('.hobby-item').length`);
   const hobbyImgIcon = await ev(`!!document.querySelector('.hobby-item .hobby-emoji.img')`);
 
-  /* 应用图标测试：上传 + 恢复默认 */
+  /* 设置页测试：折叠面板 + 存储空间条 */
   await send('Page.navigate', { url: BASE + 'data' });
   await wait(800);
   const panelCollapsedInit = await ev(`document.querySelectorAll('.setting-card.collapsible:not(.open)').length`);
-  await ev(`document.querySelector('[data-action="toggle-panel"][data-panel="icon"]').click()`);
+  await ev(`document.querySelector('[data-action="toggle-panel"][data-panel="storage"]').click()`);
   await ev(`document.querySelector('[data-action="toggle-panel"][data-panel="changelog"]').click()`);
   await wait(200);
   const panelOpenCount = await ev(`document.querySelectorAll('.setting-card.collapsible.open').length`);
-  await ev(injectInto('#app-icon-input'));
-  await wait(1500);
-  const logoCustom = await ev(`!!document.querySelector('#brand-logo img')`);
-  const appIconPreview = await ev(`!!document.querySelector('#app-icon-preview img')`);
-  await ev(`document.querySelector('[data-action="reset-app-icon"]').click()`);
-  await wait(200);
-  const logoDefault = await ev(`document.querySelector('#brand-logo').textContent.trim() === '🌸'`);
+  await wait(600);
+  const storageBarShown = await ev(`!!document.querySelector('#storage-bar-fill')`);
+  const storageText = await ev(`document.querySelector('#storage-text').textContent`);
   const settingsTabLabel = await ev(`document.querySelector('[data-tab="data"] span:last-child').textContent`);
-  const storageInfoShown = await ev(`!!document.querySelector('#storage-info')`);
-  const exportIconBtn = await ev(`!!document.querySelector('[data-action="export-app-icon"]')`);
 
   /* 更新横幅测试 */
   const bannerHiddenInit = await ev(`document.querySelector('#update-banner').classList.contains('hidden')`);
@@ -202,7 +200,7 @@ async function main() {
   const remoteVersion = await ev(`fetch('version.json?t=' + Date.now()).then(r=>r.json()).then(d=>d.version)`);
   const versionTag = await ev(`document.querySelector('#version-tag').textContent`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, settingsTabLabel, storageInfoShown, exportIconBtn, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, versionShows1111: versionText.includes('v1.11.1'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, settingsTabLabel, storageBarShown, storageText, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, versionShows1112: versionText.includes('v1.11.2'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();
