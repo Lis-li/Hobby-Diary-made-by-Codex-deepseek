@@ -31,6 +31,13 @@ node serve.js
 
 方式三：`python -m http.server 8080`（需已安装 Python）。
 
+## 线上地址
+
+- Cloudflare Pages（国内一般可直连，推荐）：https://hobby-diary.pages.dev/
+- GitHub Pages：https://lis-li.github.io/Hobby-Diary-made-by-Codex-deepseek/
+
+两个地址内容相同；数据都存在各设备浏览器本地，换地址使用时可先导出再导入备份。
+
 ## 安装为应用（PWA）
 
 通过 localhost 或 HTTPS 打开后，在 Chrome / Edge 地址栏点击「安装」图标，即可像普通应用一样使用。

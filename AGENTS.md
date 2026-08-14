@@ -2,12 +2,12 @@
 
 ## 项目简介
 
-爱好日记是一个零依赖、可离线使用的本地 Web 应用（PWA），用于记录每日爱好。每条记录可填写心情、备注并上传多张照片；部署在 GitHub Pages，手机和电脑均可访问。
+爱好日记是一个零依赖、可离线使用的本地 Web 应用（PWA），用于记录每日爱好。每条记录可填写心情、备注并上传多张照片；部署在 GitHub Pages 与 Cloudflare Pages（国内可直连），手机和电脑均可访问。
 
 ## 技术栈
 
 - 原生 HTML / CSS / JavaScript，无框架、无构建步骤、无第三方依赖
-- 数据存储：浏览器 localStorage（JSON）；照片以压缩后的 data URL 存入记录
+- 数据存储：浏览器 localStorage（JSON，不含照片）；照片以压缩后的 Blob 存入 IndexedDB（photoStore.js），记录中只存照片 ID
 - PWA：Service Worker（sw.js）+ manifest.webmanifest，支持离线与安装
 - 本地服务器：Node.js 标准库（serve.js），支持手机通过局域网访问
 
@@ -31,7 +31,15 @@ AGENTS.md             本说明
 
 - 启动本地服务：`node serve.js`（同一 Wi-Fi 下手机可访问打印的局域网地址）
 - 冒烟测试：`node test-check.mjs`（默认测试本地 8080；设置环境变量 `BASE_URL` 可测试线上站点）
-- 部署：提交并推送到 main 分支，GitHub Pages 自动重新部署
+- 部署 GitHub Pages：提交并推送到 main 分支，自动重新部署
+- 部署 Cloudflare Pages：登录后 `wrangler pages deploy <站点目录> --project-name hobby-diary --branch main`（wrangler 可通过 `npm i -g wrangler@latest` 或 `npx wrangler` 使用）
+
+## 部署说明
+
+- GitHub Pages：https://lis-li.github.io/Hobby-Diary-made-by-Codex-deepseek/ （境外，国内访问可能慢）
+- Cloudflare Pages：https://hobby-diary.pages.dev/ （国内一般可直连，作为国内主要入口）
+- 两处部署同一套静态文件；数据都存在各设备浏览器本地，不随站点同步，换入口需手动导出/导入备份
+- 若在 Cloudflare 控制台把仓库连上 Git 集成，推送到 main 也会自动部署到 Pages（当前为 wrangler 手动上传）
 
 ## 数据模型
 
@@ -49,7 +57,7 @@ AGENTS.md             本说明
 
 ## 注意事项
 
-- 照片先压缩（最长边 1280px、JPEG 0.75）再存储，避免撑爆 localStorage（约 5MB）
+- 照片先压缩（最长边 1280px、JPEG 0.75）再存入 IndexedDB；记录本身在 localStorage（约 5MB），照片不再占用其空间
 - 换浏览器或清缓存前，提醒用户先在「数据」页导出 JSON 备份
 - 修改代码后先运行 `node --check app.js`，再运行 `node test-check.mjs` 验证再交付
 - 修改应用图标后，需重新生成 icons/icon-192.png 与 icon-512.png（源文件为 icons/app-icon.svg）
