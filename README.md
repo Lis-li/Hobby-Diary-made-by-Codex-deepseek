@@ -9,13 +9,20 @@
 - 日历视图：按月查看记录，点选任意日期查看或补记
 - 统计视图：本月记录天数、连续记录、最近 14 天趋势、爱好排行
 - 爱好管理：自定义名称、从 Emoji 列表选择图标或上传自己的图片、自定义颜色
-- 照片记录：每条记录可上传最多 9 张照片（自动压缩后保存在本地）
+- 照片记录：每条记录可上传最多 9 张照片，自动压缩后存入手机的大容量本地数据库
 - 应用图标：可在「数据」页上传图片自定义应用图标
 - 自动更新：发现新版本时顶部横幅提示，点击一键重启更新
 - 背景音乐：打开页面自动播放轻松的纯音乐（Web Audio 合成），可随时静音并记住选择
-- 数据备份：一键导出 / 导入 JSON，换设备不丢数据
+- 数据备份：一键导出 / 导入 JSON（含照片），换设备不丢数据
 - 深色 / 浅色主题
 - 离线可用，可「安装」到浏览器作为应用
+
+## 线上地址
+
+- Cloudflare Pages（国内一般可直连，推荐）：https://hobby-diary.pages.dev/
+- GitHub Pages：https://lis-li.github.io/Hobby-Diary-made-by-Codex-deepseek/
+
+两个地址内容相同；数据都存在各设备浏览器本地，换地址使用时可先导出再导入备份。
 
 ## 运行方式
 
@@ -25,18 +32,11 @@
 node serve.js
 ```
 
-然后浏览器打开 http://localhost:8080
+然后浏览器打开 [http://localhost:8080](http://localhost:8080)
 
 方式二：直接双击 `index.html`（本地存储与安装功能受限）。
 
 方式三：`python -m http.server 8080`（需已安装 Python）。
-
-## 线上地址
-
-- Cloudflare Pages（国内一般可直连，推荐）：https://hobby-diary.pages.dev/
-- GitHub Pages：https://lis-li.github.io/Hobby-Diary-made-by-Codex-deepseek/
-
-两个地址内容相同；数据都存在各设备浏览器本地，换地址使用时可先导出再导入备份。
 
 ## 安装为应用（PWA）
 
@@ -44,7 +44,7 @@ node serve.js
 
 ## 数据说明
 
-- 数据保存在浏览器本地存储（localStorage）中
+- 记录数据保存在浏览器本地存储（localStorage）中，照片保存在大容量本地数据库（IndexedDB）
 - 请定期在「数据」页导出 JSON 备份
 - 换浏览器或设备时导入备份即可恢复
 
@@ -54,8 +54,12 @@ node serve.js
 index.html            主页面
 styles.css            样式
 app.js                应用逻辑
+audio.js              背景音乐引擎
+photoStore.js         照片存储层（IndexedDB）
 sw.js                 离线缓存（Service Worker）
 serve.js              本地服务器
+test-check.mjs        冒烟测试
 manifest.webmanifest  PWA 配置
 icons/                应用图标
+AGENTS.md             项目说明
 ```
