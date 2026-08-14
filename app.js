@@ -6,7 +6,7 @@ const STORAGE_KEY = 'hobby-diary:v1';
 const THEME_KEY = 'hobby-diary:theme';
 const FOCUS_KEY = 'hobby-diary:focus-session';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.11.2';
+const APP_VERSION = '1.11.3';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -19,6 +19,7 @@ const MOODS = [
   { v: 5, emoji: '🤩', label: '超棒' }
 ];
 const CHANGELOG = [
+  { v: 'v1.11.3', text: '应用图标换成新封面图片；修复了日历详情里照片无法预览的问题。' },
   { v: 'v1.11.2', text: '应用图标换成 Hobby Diary 封面图片，移除了自定义图标功能；设置页新增存储空间数据条；修复了照片退出后消失的问题。' },
   { v: 'v1.11.1', text: '「数据」页改名「设置」，新增照片空间显示；上传应用图标后可导出文件，用来更换手机桌面图标。' },
   { v: 'v1.11', text: '照片存储升级：照片改存大容量本地数据库，传几十张也没问题；旧照片会自动迁移，不用手动处理。' },
@@ -391,6 +392,7 @@ function renderCalendar() {
     <div class="cal-week">${WEEKDAYS.map(w => `<span>${w}</span>`).join('')}</div>
     <div class="cal-grid">${cells}</div>
     ${detail}`;
+  fillPhotoSrcs(el);
 }
 
 function renderStats() {
