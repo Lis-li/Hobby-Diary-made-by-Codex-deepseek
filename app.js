@@ -7,7 +7,7 @@ const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const FOCUS_KEY = 'hobby-diary:focus-session';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.10.5';
+const APP_VERSION = '1.11';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -20,6 +20,7 @@ const MOODS = [
   { v: 5, emoji: '🤩', label: '超棒' }
 ];
 const CHANGELOG = [
+  { v: 'v1.11', text: '照片存储升级：照片改存大容量本地数据库，传几十张也没问题；旧照片会自动迁移，不用手动处理。' },
   { v: 'v1.10.5', text: '继续修背景音乐：点一下屏幕音乐响起后会提示「音乐已开启」；顶端布局更清爽。' },
   { v: 'v1.10.4', text: '继续修背景音乐：兼容更多手机浏览器，打开后点一下屏幕就能响起。' },
   { v: 'v1.10.3', text: '修好了手机上的背景音乐：打开后点一下屏幕就能响起；数据页和专注计时都可以收起来，页面更清爽。' },
@@ -88,6 +89,7 @@ let focusSession = loadFocusSession();
 let focusSaveHobbyId = null;
 let focusSaveMinutes = 0;
 let focusCardOpen = false;
+const photoUrlCache = new Map();
 
 function defaultState() { return { hobbies: [], records: [] }; }
 function seedSampleHobbies() {
@@ -172,6 +174,7 @@ function renderAll() {
   renderStats();
   renderHobbies();
   renderData();
+  fillPhotoSrcs(document);
 }
 function renderHeader() {
   const sub = $('#header-sub');
@@ -200,7 +203,7 @@ function recordRowHtml(r) {
     <div class="rec-main">
       <div class="rec-name">${h ? escapeHtml(h.name) : '未知爱好'}${r.minutes ? `<span class="rec-min">${r.minutes} 分钟</span>` : ''}${m ? `<span class="rec-mood">${m.emoji} ${m.label}</span>` : ''}</div>
       ${r.note ? `<div class="rec-note">${escapeHtml(r.note)}</div>` : ''}
-      ${(r.photos && r.photos.length) ? `<div class="rec-photos">${r.photos.map((p, i) => `<img class="rec-photo" src="${p}" alt="照片" data-action="view-photo" data-id="${r.id}" data-index="${i}" loading="lazy">`).join('')}</div>` : ''}
+      ${(r.photos && r.photos.length) ? `<div class="rec-photos">${r.photos.map((id, i) => `<img class="rec-photo" data-photo-id="${id}" alt="照片" data-action="view-photo" data-id="${r.id}" data-index="${i}" loading="lazy">`).join('')}</div>` : ''}
     </div>
     <div class="rec-actions">
       <button data-action="edit-record" data-id="${r.id}" title="编辑">✎</button>
@@ -484,6 +487,7 @@ function renderData() {
   if (!el) return;
   const sizeKb = (JSON.stringify(state).length / 1024).toFixed(1);
   const theme = localStorage.getItem(THEME_KEY) || 'light';
+  const photoCount = state.records.reduce((s, r) => s + (Array.isArray(r.photos) ? r.photos.length : 0), 0);
   el.innerHTML = `
     <div class="page-head"><h2>数据与设置</h2></div>
     ${panelCard('backup', '💾 数据备份', `
@@ -515,7 +519,8 @@ function renderData() {
       <button class="btn-danger" data-action="clear-data">清空全部数据</button>`, 'danger')}
     <div class="about">
       <div>Hobby Diary · 本地版 v${APP_VERSION}</div>
-      <div>当前数据约 ${sizeKb} KB（${state.hobbies.length} 个爱好、${state.records.length} 条记录）</div>
+      <div>当前数据约 ${sizeKb} KB（${state.hobbies.length} 个爱好、${state.records.length} 条记录、${photoCount} 张照片）</div>
+      <div>照片存储在大容量本地数据库，不再占用网页存储空间。</div>
       <button class="link-btn" data-action="check-update">🔄 检查更新</button>
       <div>支持离线使用；发现新版本时顶部会提示一键更新。</div>
     </div>`;
@@ -539,7 +544,7 @@ function closeModal() {
 function openRecordModal(date, record, preferredHobbyId) {
   modalRecordId = record ? record.id : null;
   selectedMood = record && record.mood ? record.mood : null;
-  modalPhotos = record && Array.isArray(record.photos) ? [...record.photos] : [];
+  modalPhotos = record && Array.isArray(record.photos) ? record.photos.map(id => ({ id })) : [];
   const isNew = !record;
   const targetHobby = record ? hobbyById(record.hobbyId) : null;
   const moodBtns = MOODS.map(m => `<button type="button" class="mood-btn ${selectedMood === m.v ? 'on' : ''}" data-mood="${m.v}" title="${m.label}">${m.emoji}</button>`).join('');
@@ -581,21 +586,37 @@ function openRecordModal(date, record, preferredHobbyId) {
   }
   $('#record-form').addEventListener('submit', onRecordSubmit);
 }
-function onRecordSubmit(e) {
+async function onRecordSubmit(e) {
   e.preventDefault();
   const fd = new FormData(e.target);
   const date = String(fd.get('date') || currentDate);
   const hobbyId = String(fd.get('hobbyId') || '');
   if (!hobbyId && state.hobbies.length === 0) { toast('请先添加爱好'); return; }
   const note = String(fd.get('note') || '').trim();
+  const oldPhotos = [];
+  const photos = [];
+  for (const item of modalPhotos.slice(0, 9)) {
+    if (item.id) {
+      oldPhotos.push(item.id);
+      photos.push(item.id);
+    } else if (item.dataUrl) {
+      photos.push(await storePhotoDataUrl(item.dataUrl));
+    }
+  }
   if (modalRecordId) {
     const r = state.records.find(x => x.id === modalRecordId);
-    if (r) { r.date = date; r.hobbyId = hobbyId; r.mood = selectedMood; r.note = note; r.photos = modalPhotos.slice(0, 9); }
+    if (r) {
+      oldPhotos.push(...(Array.isArray(r.photos) ? r.photos : []));
+      r.date = date; r.hobbyId = hobbyId; r.mood = selectedMood; r.note = note; r.photos = photos;
+    }
     toast('已更新');
   } else {
-    state.records.push({ id: uid(), date, hobbyId, mood: selectedMood, note, photos: modalPhotos.slice(0, 9), createdAt: Date.now() });
+    state.records.push({ id: uid(), date, hobbyId, mood: selectedMood, note, photos, createdAt: Date.now() });
     toast('已记录 🎉');
   }
+  // 清理编辑时被移除的旧照片
+  const removed = oldPhotos.filter((id, i) => oldPhotos.indexOf(id) === i && !photos.includes(id));
+  removed.forEach(id => { revokePhotoUrl(id); PhotoStore.deletePhoto(id).catch(() => {}); });
   saveState();
   closeModal();
   renderAll();
@@ -680,9 +701,15 @@ function renderPhotoGrid() {
   if (!grid) return;
   grid.innerHTML = modalPhotos.map((p, i) => `
     <div class="photo-item">
-      <img src="${p}" alt="照片预览">
+      <img data-grid-idx="${i}" alt="照片预览">
       <button type="button" class="photo-remove" data-action="remove-photo" data-index="${i}" title="移除照片">✕</button>
     </div>`).join('');
+  modalPhotos.forEach((p, i) => {
+    const img = grid.querySelector(`img[data-grid-idx="${i}"]`);
+    if (!img) return;
+    if (p.dataUrl) img.src = p.dataUrl;
+    else if (p.id) loadPhotoUrl(p.id).then(url => { if (url) img.src = url; }).catch(() => {});
+  });
 }
 function compressImage(file, maxDim, quality) {
   const limit = maxDim || 1280;
@@ -711,6 +738,67 @@ function compressImage(file, maxDim, quality) {
     reader.readAsDataURL(file);
   });
 }
+function dataUrlToBlob(dataUrl) {
+  const parts = dataUrl.split(',');
+  const mime = (parts[0].match(/data:(.*?);/) || [])[1] || 'image/jpeg';
+  const bin = atob(parts[1]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+async function storePhotoDataUrl(dataUrl) {
+  const id = uid();
+  await PhotoStore.putPhoto(id, dataUrlToBlob(dataUrl));
+  return id;
+}
+async function loadPhotoUrl(id) {
+  if (photoUrlCache.has(id)) return photoUrlCache.get(id);
+  const blob = await PhotoStore.getPhoto(id);
+  if (!blob) return '';
+  const url = URL.createObjectURL(blob);
+  photoUrlCache.set(id, url);
+  return url;
+}
+function revokePhotoUrl(id) {
+  const url = photoUrlCache.get(id);
+  if (url) { URL.revokeObjectURL(url); photoUrlCache.delete(id); }
+}
+async function fillPhotoSrcs(root) {
+  const imgs = root.querySelectorAll('img.rec-photo[data-photo-id]:not([src])');
+  for (const img of imgs) {
+    try {
+      const url = await loadPhotoUrl(img.dataset.photoId);
+      if (url) img.src = url;
+    } catch (err) { /* 照片读取失败时保持占位 */ }
+  }
+}
+async function migrateLegacyPhotos() {
+  const hasLegacy = state.records.some(r => Array.isArray(r.photos) && r.photos.some(p => typeof p === 'string' && p.startsWith('data:image')));
+  if (!hasLegacy) return;
+  let changed = false;
+  for (const r of state.records) {
+    if (!Array.isArray(r.photos)) continue;
+    const next = [];
+    for (const p of r.photos) {
+      if (typeof p === 'string' && p.startsWith('data:image')) {
+        next.push(await storePhotoDataUrl(p));
+        changed = true;
+      } else {
+        next.push(p);
+      }
+    }
+    r.photos = next;
+  }
+  if (changed) saveState();
+}
 async function handlePhotoFiles(files) {
   const remaining = 9 - modalPhotos.length;
   if (remaining <= 0) { toast('最多添加 9 张照片'); return; }
@@ -719,17 +807,19 @@ async function handlePhotoFiles(files) {
     try {
       if (!file.type.startsWith('image/')) continue;
       const dataUrl = await compressImage(file);
-      modalPhotos.push(dataUrl);
+      modalPhotos.push({ dataUrl });
       added++;
       renderPhotoGrid();
     } catch (err) { /* 跳过无法读取的图片 */ }
   }
   if (added) toast(`已添加 ${added} 张照片`);
 }
-function openLightbox(recordId, index) {
+async function openLightbox(recordId, index) {
   const r = state.records.find(x => x.id === recordId);
   if (!r || !r.photos || !r.photos[index]) return;
-  $('#lightbox-img').src = r.photos[index];
+  const url = await loadPhotoUrl(r.photos[index]);
+  if (!url) { toast('照片读取失败'); return; }
+  $('#lightbox-img').src = url;
   $('#lightbox').classList.remove('hidden');
   document.body.classList.add('modal-open');
 }
@@ -744,6 +834,7 @@ function deleteRecord(id) {
   const r = state.records.find(x => x.id === id);
   if (!r) return;
   if (!confirm('确定删除这条记录吗？')) return;
+  (r.photos || []).forEach(pid => { revokePhotoUrl(pid); PhotoStore.deletePhoto(pid).catch(() => {}); });
   state.records = state.records.filter(x => x.id !== id);
   saveState();
   renderAll();
@@ -754,14 +845,27 @@ function deleteHobby(id) {
   if (!h) return;
   const n = state.records.filter(r => r.hobbyId === id).length;
   if (!confirm(`确定删除「${h.name}」吗？${n ? `将同时删除它的 ${n} 条记录。` : ''}`)) return;
+  state.records.filter(r => r.hobbyId === id).forEach(r => (r.photos || []).forEach(pid => { revokePhotoUrl(pid); PhotoStore.deletePhoto(pid).catch(() => {}); }));
   state.hobbies = state.hobbies.filter(x => x.id !== id);
   state.records = state.records.filter(r => r.hobbyId !== id);
   saveState();
   renderAll();
   toast('已删除');
 }
-function exportData() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+async function exportData() {
+  const records = [];
+  for (const r of state.records) {
+    const photos = [];
+    for (const pid of (r.photos || [])) {
+      try {
+        const blob = await PhotoStore.getPhoto(pid);
+        photos.push(blob ? await blobToDataUrl(blob) : '');
+      } catch (err) { photos.push(''); }
+    }
+    records.push({ ...r, photos: photos.filter(Boolean) });
+  }
+  const data = { ...state, records };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `爱好日记备份-${todayStr()}.json`;
@@ -780,7 +884,21 @@ async function importData(input) {
     const data = JSON.parse(text);
     if (!data || !Array.isArray(data.hobbies) || !Array.isArray(data.records)) throw new Error('bad');
     if (!confirm(`导入将覆盖当前全部数据（当前 ${state.hobbies.length} 个爱好、${state.records.length} 条记录）。是否继续？`)) return;
-    state = { hobbies: data.hobbies.map(normalizeHobby), records: data.records.map(normalizeRecord) };
+    photoUrlCache.forEach(url => URL.revokeObjectURL(url));
+    photoUrlCache.clear();
+    const records = [];
+    for (const r of data.records) {
+      const photos = [];
+      for (const p of (Array.isArray(r.photos) ? r.photos : [])) {
+        if (typeof p === 'string' && p.startsWith('data:image')) {
+          photos.push(await storePhotoDataUrl(p));
+        } else if (typeof p === 'string' && p) {
+          photos.push(p);
+        }
+      }
+      records.push({ ...normalizeRecord(r), photos });
+    }
+    state = { hobbies: data.hobbies.map(normalizeHobby), records };
     saveState();
     renderAll();
     toast('导入成功 ✅');
@@ -1104,7 +1222,7 @@ function maybeSeedDemo() {
 }
 
 /* ============ 初始化 ============ */
-function init() {
+async function init() {
   const p = new URLSearchParams(location.search);
   const t = p.get('tab');
   if (t && VIEWS.includes(t)) activeTab = t;
@@ -1114,6 +1232,7 @@ function init() {
   bindEvents();
   setTab(activeTab, false);
   if (focusSession && !hobbyById(focusSession.hobbyId)) clearFocusSession();
+  try { await migrateLegacyPhotos(); } catch (err) { /* 迁移失败不阻塞使用 */ }
   setTimeout(() => {
     if (typeof MusicPlayer.isPending === 'function' && MusicPlayer.isPending()) {
       toast('🎵 点一下屏幕即可开启背景音乐');

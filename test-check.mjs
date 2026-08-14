@@ -136,7 +136,9 @@ async function main() {
   await ev(`(()=>{const f=document.querySelector('#record-form'); f.querySelector('[name="note"]').value='带照片的记录'; f.requestSubmit(); return true;})()`);
   await wait(500);
   const photoCount = await ev(`document.querySelectorAll('#view-today .rec-photo').length`);
-  const lightboxOpened = await ev(`(()=>{document.querySelector('#view-today .rec-photo').click(); return !document.querySelector('#lightbox').classList.contains('hidden') && document.querySelector('#lightbox-img').src.startsWith('data:image');})()`);
+  await ev(`document.querySelector('#view-today .rec-photo').click()`);
+  await wait(500);
+  const lightboxOpened = await ev(`!document.querySelector('#lightbox').classList.contains('hidden') && document.querySelector('#lightbox-img').src.length > 0`);
   await ev(`document.querySelector('[data-action="close-lightbox"]').click()`);
   const lightboxClosed = await ev(`document.querySelector('#lightbox').classList.contains('hidden')`);
 
@@ -197,7 +199,7 @@ async function main() {
   const remoteVersion = await ev(`fetch('version.json?t=' + Date.now()).then(r=>r.json()).then(d=>d.version)`);
   const versionTag = await ev(`document.querySelector('#version-tag').textContent`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, versionShows1105: versionText.includes('v1.10.5'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, versionShows111: versionText.includes('v1.11'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();

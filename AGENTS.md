@@ -18,6 +18,7 @@ index.html            主页面（含弹窗、照片查看器结构）
 styles.css            样式
 app.js                核心逻辑（数据管理、视图渲染、交互）
 audio.js              背景音乐引擎（Web Audio 实时合成，无需音频文件）
+photoStore.js         照片存储层（IndexedDB，容量远大于 localStorage）
 sw.js                 离线缓存 Service Worker
 serve.js              本地服务器（启动时打印手机访问地址）
 test-check.mjs        无头 Chrome + CDP 冒烟测试
@@ -35,7 +36,7 @@ AGENTS.md             本说明
 ## 数据模型
 
 - hobbies：`{ id, name, emoji, color, createdAt }`，其中 emoji 可以是 Emoji 字符，也可以是上传图片压缩后的 data URL
-- records：`{ id, date(YYYY-MM-DD), hobbyId, minutes(可选), mood(1-5), note, photos(data URL 数组，最多 9 张), createdAt }`
+- records：`{ id, date(YYYY-MM-DD), hobbyId, minutes(可选), mood(1-5), note, photos(照片 ID 数组，最多 9 张，实际二进制存于 IndexedDB), createdAt }`
 - localStorage 键：`hobby-diary:v1`（数据）、`hobby-diary:theme`（主题）、`hobby-diary:app-icon`（自定义应用图标）、`hobby-diary:focus-session`（专注计时会话，含开始/暂停时间戳，用于锁屏或重开页面后恢复计时）
 
 ## 代码规范
