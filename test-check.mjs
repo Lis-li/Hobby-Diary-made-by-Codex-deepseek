@@ -182,6 +182,9 @@ async function main() {
   await ev(`document.querySelector('[data-action="reset-app-icon"]').click()`);
   await wait(200);
   const logoDefault = await ev(`document.querySelector('#brand-logo').textContent.trim() === '🌸'`);
+  const settingsTabLabel = await ev(`document.querySelector('[data-tab="data"] span:last-child').textContent`);
+  const storageInfoShown = await ev(`!!document.querySelector('#storage-info')`);
+  const exportIconBtn = await ev(`!!document.querySelector('[data-action="export-app-icon"]')`);
 
   /* 更新横幅测试 */
   const bannerHiddenInit = await ev(`document.querySelector('#update-banner').classList.contains('hidden')`);
@@ -199,7 +202,7 @@ async function main() {
   const remoteVersion = await ev(`fetch('version.json?t=' + Date.now()).then(r=>r.json()).then(d=>d.version)`);
   const versionTag = await ev(`document.querySelector('#version-tag').textContent`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, versionShows111: versionText.includes('v1.11'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, logoCustom, appIconPreview, logoDefault, settingsTabLabel, storageInfoShown, exportIconBtn, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, versionShows1111: versionText.includes('v1.11.1'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();

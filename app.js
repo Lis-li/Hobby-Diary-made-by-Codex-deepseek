@@ -7,7 +7,7 @@ const THEME_KEY = 'hobby-diary:theme';
 const APP_ICON_KEY = 'hobby-diary:app-icon';
 const FOCUS_KEY = 'hobby-diary:focus-session';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.11';
+const APP_VERSION = '1.11.1';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -20,6 +20,7 @@ const MOODS = [
   { v: 5, emoji: '🤩', label: '超棒' }
 ];
 const CHANGELOG = [
+  { v: 'v1.11.1', text: '「数据」页改名「设置」，新增照片空间显示；上传应用图标后可导出文件，用来更换手机桌面图标。' },
   { v: 'v1.11', text: '照片存储升级：照片改存大容量本地数据库，传几十张也没问题；旧照片会自动迁移，不用手动处理。' },
   { v: 'v1.10.5', text: '继续修背景音乐：点一下屏幕音乐响起后会提示「音乐已开启」；顶端布局更清爽。' },
   { v: 'v1.10.4', text: '继续修背景音乐：兼容更多手机浏览器，打开后点一下屏幕就能响起。' },
@@ -489,7 +490,8 @@ function renderData() {
   const theme = localStorage.getItem(THEME_KEY) || 'light';
   const photoCount = state.records.reduce((s, r) => s + (Array.isArray(r.photos) ? r.photos.length : 0), 0);
   el.innerHTML = `
-    <div class="page-head"><h2>数据与设置</h2></div>
+    <div class="page-head"><h2>设置</h2></div>
+    <div class="storage-info" id="storage-info">照片空间：计算中…</div>
     ${panelCard('backup', '💾 数据备份', `
       <p class="setting-desc">数据保存在当前浏览器的本地存储中，建议定期导出备份；换设备或换浏览器时再导入即可恢复。</p>
       <div class="btn-row">
@@ -500,7 +502,7 @@ function renderData() {
       <p class="setting-desc">每次更新加了什么、修了什么，都记在这里。</p>
       <button class="btn-secondary" data-action="open-changelog">查看更新说明</button>`)}
     ${panelCard('icon', '🖼 应用图标', `
-      <p class="setting-desc">上传一张图片作为应用图标（显示在首页和浏览器标签页）。安装到手机桌面后的图标是项目里的固定文件，想换成你自己的图，把图片发给我替换即可。</p>
+      <p class="setting-desc">上传图片后，应用内部（顶部图标、浏览器标签页）会立即更换；手机桌面图标是安装时固定的，需要替换图标文件并重新添加到主屏幕才会变。</p>
       <div class="app-icon-row">
         <div class="app-icon-preview" id="app-icon-preview"></div>
         <div class="btn-row">
@@ -508,6 +510,7 @@ function renderData() {
           <button class="btn-secondary" data-action="reset-app-icon">↺ 恢复默认</button>
         </div>
       </div>
+      <button class="btn-secondary" data-action="export-app-icon">⬇ 导出图标文件</button>
       <input type="file" id="app-icon-input" accept="image/*" hidden>`)}
     ${panelCard('theme', '🕶 外观', `
       <div class="btn-row">
@@ -525,6 +528,7 @@ function renderData() {
       <div>支持离线使用；发现新版本时顶部会提示一键更新。</div>
     </div>`;
   renderAppIconPreview();
+  updateStorageInfo();
 }
 
 /* ============ 弹窗 ============ */
@@ -978,6 +982,7 @@ function onAction(action, el) {
       toast('已恢复默认图标');
       break;
     }
+    case 'export-app-icon': exportAppIcon(); break;
     case 'apply-update': applyUpdate(); break;
     case 'dismiss-update': dismissUpdate(); break;
     case 'check-update': checkForUpdates(true); break;
@@ -1096,6 +1101,49 @@ async function handleAppIconUpload(input) {
   } catch (err) {
     toast('图片处理失败，请换一张试试');
   }
+}
+async function updateStorageInfo() {
+  const box = $('#storage-info');
+  if (!box) return;
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      const used = est.usage || 0;
+      const quota = est.quota || 0;
+      const usedMB = (used / 1048576).toFixed(1);
+      const leftMB = Math.max(0, (quota - used) / 1048576).toFixed(0);
+      const approx = Math.max(0, Math.floor((quota - used) / (300 * 1024)));
+      box.textContent = `照片空间（存本机）：已用 ${usedMB} MB · 剩余约 ${leftMB} MB · 还能存约 ${approx} 张照片`;
+    } else {
+      box.textContent = '照片空间：当前浏览器不支持查看';
+    }
+  } catch (err) {
+    box.textContent = '照片空间：暂时无法获取';
+  }
+}
+function exportAppIcon() {
+  const icon = localStorage.getItem(APP_ICON_KEY);
+  if (!icon) { toast('请先上传一张图标'); return; }
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    canvas.getContext('2d').drawImage(img, 0, 0, 512, 512);
+    canvas.toBlob(blob => {
+      if (!blob) { toast('图标导出失败'); return; }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'HobbyDiary-icon.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      toast('图标文件已导出');
+    }, 'image/png');
+  };
+  img.onerror = () => toast('图标读取失败');
+  img.src = icon;
 }
 
 /* ============ 主题 ============ */
