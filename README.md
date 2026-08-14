@@ -53,7 +53,7 @@ node serve.js
 3. 向下滑动菜单，点「添加到主屏幕」
 4. 点右上角「添加」，桌面就会出现 Hobby Diary 图标
 
-![iPhone 安装教程](assets/ios-install.png)
+<img src="assets/ios-install.png" alt="iPhone 安装教程" width="340">
 
 ### 安卓（Chrome）
 
@@ -62,7 +62,7 @@ node serve.js
 3. 点「安装应用」（或「添加到主屏幕」）
 4. 点「安装」，桌面就会出现 Hobby Diary 图标
 
-![安卓安装教程](assets/android-install.png)
+<img src="assets/android-install.png" alt="安卓安装教程" width="340">
 
 ## 数据说明
 
