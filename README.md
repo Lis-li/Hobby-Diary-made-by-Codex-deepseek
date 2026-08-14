@@ -42,6 +42,28 @@ node serve.js
 
 通过 localhost 或 HTTPS 打开后，在 Chrome / Edge 地址栏点击「安装」图标，即可像普通应用一样使用。
 
+## 手机安装教程
+
+苹果和安卓都可以把 Hobby Diary 添加到手机桌面，像普通 App 一样全屏、离线使用。
+
+### iPhone（Safari）
+
+1. 用 Safari 打开 https://hobby-diary.pages.dev/
+2. 点底部中间的「分享」按钮（方框加箭头图标）
+3. 向下滑动菜单，点「添加到主屏幕」
+4. 点右上角「添加」，桌面就会出现 Hobby Diary 图标
+
+![iPhone 安装教程](assets/ios-install.png)
+
+### 安卓（Chrome）
+
+1. 用 Chrome 打开 https://hobby-diary.pages.dev/
+2. 点右上角「⋮」三个点菜单
+3. 点「安装应用」（或「添加到主屏幕」）
+4. 点「安装」，桌面就会出现 Hobby Diary 图标
+
+![安卓安装教程](assets/android-install.png)
+
 ## 数据说明
 
 - 记录数据保存在浏览器本地存储（localStorage）中，照片保存在大容量本地数据库（IndexedDB）

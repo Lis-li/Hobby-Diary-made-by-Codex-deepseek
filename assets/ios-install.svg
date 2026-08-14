@@ -1,0 +1,34 @@
+<!-- ios-install.svg —— iPhone 安装教程示意图：Safari 添加到主屏幕的四步说明。 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 1000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EAF4FF"/>
+      <stop offset="1" stop-color="#D2E6FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="1000" rx="36" fill="url(#bg)"/>
+  <text x="320" y="86" text-anchor="middle" font-size="40" font-weight="bold" fill="#1B3A6B" font-family="Microsoft YaHei, PingFang SC, sans-serif">iPhone 安装教程</text>
+  <text x="320" y="126" text-anchor="middle" font-size="22" fill="#4A6B9A" font-family="Microsoft YaHei, PingFang SC, sans-serif">Safari 添加到主屏幕</text>
+
+  <g font-family="Microsoft YaHei, PingFang SC, sans-serif">
+    <circle cx="76" cy="240" r="34" fill="#3A7BD5"/>
+    <text x="76" y="252" text-anchor="middle" font-size="34" font-weight="bold" fill="#FFFFFF">1</text>
+    <text x="140" y="232" font-size="26" font-weight="bold" fill="#1B3A6B">📱 打开 Safari</text>
+    <text x="140" y="266" font-size="20" fill="#4A6B9A">访问 hobby-diary.pages.dev</text>
+
+    <circle cx="76" cy="430" r="34" fill="#3A7BD5"/>
+    <text x="76" y="442" text-anchor="middle" font-size="34" font-weight="bold" fill="#FFFFFF">2</text>
+    <text x="140" y="422" font-size="26" font-weight="bold" fill="#1B3A6B">⬆️ 点底部「分享」按钮</text>
+    <text x="140" y="456" font-size="20" fill="#4A6B9A">就是方框加箭头的那个图标</text>
+
+    <circle cx="76" cy="620" r="34" fill="#3A7BD5"/>
+    <text x="76" y="632" text-anchor="middle" font-size="34" font-weight="bold" fill="#FFFFFF">3</text>
+    <text x="140" y="612" font-size="26" font-weight="bold" fill="#1B3A6B">🏠 选「添加到主屏幕」</text>
+    <text x="140" y="646" font-size="20" fill="#4A6B9A">向下滑动菜单找到它</text>
+
+    <circle cx="76" cy="810" r="34" fill="#3A7BD5"/>
+    <text x="76" y="822" text-anchor="middle" font-size="34" font-weight="bold" fill="#FFFFFF">4</text>
+    <text x="140" y="802" font-size="26" font-weight="bold" fill="#1B3A6B">✅ 点「添加」完成</text>
+    <text x="140" y="836" font-size="20" fill="#4A6B9A">桌面出现 Hobby Diary 图标</text>
+  </g>
+</svg>
