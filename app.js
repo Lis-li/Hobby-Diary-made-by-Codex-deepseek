@@ -6,7 +6,7 @@ const STORAGE_KEY = 'hobby-diary:v1';
 const THEME_KEY = 'hobby-diary:theme';
 const FOCUS_KEY = 'hobby-diary:focus-session';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.11.3';
+const APP_VERSION = '1.11.4';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -19,6 +19,7 @@ const MOODS = [
   { v: 5, emoji: '🤩', label: '超棒' }
 ];
 const CHANGELOG = [
+  { v: 'v1.11.4', text: '修复日历日期：应用在后台停留过夜后，回到前台会自动回到当天；背景音乐音量再调大一些。' },
   { v: 'v1.11.3', text: '应用图标换成新封面图片；修复了日历详情里照片无法预览的问题。' },
   { v: 'v1.11.2', text: '应用图标换成 Hobby Diary 封面图片，移除了自定义图标功能；设置页新增存储空间数据条；修复了照片退出后消失的问题。' },
   { v: 'v1.11.1', text: '「数据」页改名「设置」，新增照片空间显示；上传应用图标后可导出文件，用来更换手机桌面图标。' },
@@ -91,6 +92,7 @@ let focusSession = loadFocusSession();
 let focusSaveHobbyId = null;
 let focusSaveMinutes = 0;
 let focusCardOpen = false;
+let lastToday = todayStr();
 const photoUrlCache = new Map();
 
 function defaultState() { return { hobbies: [], records: [] }; }
@@ -169,7 +171,15 @@ function hobbyStats(id) {
 }
 
 /* ============ 渲染 ============ */
+function refreshTodayAnchors() {
+  const now = todayStr();
+  if (currentDate === lastToday) currentDate = now;
+  if (selectedCalendarDate === lastToday) selectedCalendarDate = now;
+  if (calendarCursor === lastToday.slice(0, 7)) calendarCursor = now.slice(0, 7);
+  lastToday = now;
+}
 function renderAll() {
+  refreshTodayAnchors();
   renderHeader();
   renderToday();
   renderCalendar();
@@ -1045,6 +1055,7 @@ function bindEvents() {
     if (el) onAction(el.dataset.action, el);
   });
   document.addEventListener('hobby-music-started', () => toast('音乐已开启 🎵'));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) renderAll(); });
   $('#modal-backdrop').addEventListener('click', e => { if (e.target.id === 'modal-backdrop') closeModal(); });
   $('#lightbox').addEventListener('click', e => { if (e.target.id === 'lightbox') closeLightbox(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });

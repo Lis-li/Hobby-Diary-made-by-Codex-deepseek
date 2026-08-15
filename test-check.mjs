@@ -90,6 +90,7 @@ async function main() {
   const focusCardExists = await ev(`!!document.querySelector('.focus-card')`);
   const focusAfterNav = await ev(`document.querySelector('#view-today .date-nav').compareDocumentPosition(document.querySelector('#view-today .focus-card')) & Node.DOCUMENT_POSITION_FOLLOWING`);
   const focusCardCollapsedInit = await ev(`!document.querySelector('.focus-card').classList.contains('open')`);
+  const dateAnchorFix = await ev(`(()=>{const old=addDays(todayStr(),-1); currentDate=old; selectedCalendarDate=old; lastToday=old; refreshTodayAnchors(); return currentDate===todayStr() && selectedCalendarDate===todayStr();})()`);
   await ev(`document.querySelector('[data-action="toggle-focus-card"]').click()`);
   await wait(200);
   const focusCardOpened = await ev(`document.querySelector('.focus-card').classList.contains('open')`);
@@ -208,7 +209,7 @@ async function main() {
   const remoteVersion = await ev(`fetch('version.json?t=' + Date.now()).then(r=>r.json()).then(d=>d.version)`);
   const versionTag = await ev(`document.querySelector('#version-tag').textContent`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, settingsTabLabel, storageBarShown, storageText, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, versionShows1113: versionText.includes('v1.11.3'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, settingsTabLabel, storageBarShown, storageText, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, versionShows1114: versionText.includes('v1.11.4'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();
