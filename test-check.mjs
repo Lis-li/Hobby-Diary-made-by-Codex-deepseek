@@ -80,6 +80,7 @@ async function main() {
   await wait(1000);
   const before = await ev(`document.querySelectorAll('#view-today .record-row').length`);
   const chipIcon = await ev(`document.querySelector('.date-chip-ico').textContent`);
+  const dateText = await ev(`document.querySelector('.date-text').textContent`);
   const musicBtnInit = await ev(`document.querySelector('#music-toggle').textContent`);
   await ev(`document.querySelector('[data-action="toggle-music"]').click()`);
   await wait(200);
@@ -209,7 +210,19 @@ async function main() {
   const remoteVersion = await ev(`fetch('version.json?t=' + Date.now()).then(r=>r.json()).then(d=>d.version)`);
   const versionTag = await ev(`document.querySelector('#version-tag').textContent`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, settingsTabLabel, storageBarShown, storageText, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, versionShows1114: versionText.includes('v1.11.4'), remoteVersion, versionTag }, null, 2));
+  /* 应用锁测试 */
+  await ev(`document.querySelector('[data-action="toggle-panel"][data-panel="lock"]').click()`);
+  await wait(200);
+  await ev(`(()=>{document.querySelector('#lock-new').value='1234'; document.querySelector('#lock-confirm').value='1234'; document.querySelector('[data-action="lock-save"]').click(); return true;})()`);
+  await wait(500);
+  await ev(`sessionStorage.removeItem('hobby-diary:unlocked'); location.reload()`);
+  await wait(2200);
+  const lockScreenShown = await ev(`!document.querySelector('#lock-screen').classList.contains('hidden')`);
+  await ev(`(()=>{document.querySelector('#lock-input').value='1234'; document.querySelector('[data-action="lock-unlock"]').click(); return true;})()`);
+  await wait(600);
+  const lockScreenGone = await ev(`document.querySelector('#lock-screen').classList.contains('hidden')`);
+
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, dateText, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, settingsTabLabel, storageBarShown, storageText, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, lockScreenShown, lockScreenGone, versionShows1115: versionText.includes('v1.11.5'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();

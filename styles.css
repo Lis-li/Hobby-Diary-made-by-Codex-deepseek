@@ -116,20 +116,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ===== 今日页 ===== */
 .date-nav{display:flex;align-items:center;justify-content:center;gap:10px;margin:2px 0 12px}
 .date-chip{
-  display:flex;align-items:center;gap:8px;
+  position:relative;display:flex;align-items:center;gap:8px;
   background:var(--card);border:2px solid var(--border);border-radius:999px;
-  padding:7px 16px;box-shadow:var(--shadow);cursor:pointer;
+  padding:9px 16px;box-shadow:var(--shadow);cursor:pointer;
 }
 .date-chip.bump{animation:chipBump .4s ease}
 @keyframes chipBump{0%{transform:scale(.94)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
 .date-chip-ico{font-size:16px;line-height:1}
+.date-text{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap}
 .date-input{
-  width:auto;max-width:140px;font-size:16px;font-weight:600;
-  color:var(--text);background:transparent;border:none;text-align:center;outline:none;
-  cursor:pointer;
+  position:absolute;inset:0;width:100%;height:100%;opacity:0;
+  cursor:pointer;border:none;background:transparent;
 }
-.date-input::-webkit-calendar-picker-indicator{display:none}
-.date-input::-webkit-inner-spin-button{display:none}
+.date-input::-webkit-calendar-picker-indicator{opacity:0}
 
 /* ===== 专注计时卡片 ===== */
 .focus-card{
@@ -215,10 +214,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .cal-week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11.5px;color:var(--text-soft);padding:6px 0}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .cal-cell{
-  height:46px;background:var(--card);border:2px solid transparent;border-radius:12px;
+  height:52px;background:var(--card);border:2px solid transparent;border-radius:12px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  font-size:14px;cursor:pointer;transition:.12s;box-shadow:var(--shadow);
+  font-size:15px;cursor:pointer;transition:.12s;box-shadow:var(--shadow);min-width:0;
 }
+.cal-num{white-space:nowrap;line-height:1}
 .cal-cell:hover{border-color:var(--border)}
 .cal-cell.today{border-color:var(--accent);font-weight:700}
 .cal-cell.selected{background:var(--bg-soft);border-color:var(--accent);animation:cellPop .3s ease}
@@ -317,6 +317,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .cl-item{display:flex;gap:10px;background:var(--bg-soft);border-radius:12px;padding:10px 12px}
 .cl-v{flex:none;font-size:12px;font-weight:700;color:var(--accent);min-width:58px;padding-top:1px}
 .cl-item p{font-size:13px;color:var(--text);line-height:1.6}
+
+/* ===== 应用锁屏 ===== */
+.lock-screen{
+  position:fixed;inset:0;z-index:100;
+  background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.lock-box{width:100%;max-width:320px;text-align:center}
+.lock-emoji{font-size:48px}
+.lock-title{font-size:20px;font-weight:800;margin:10px 0 20px}
+.lock-box input{text-align:center}
+.lock-box .btn-primary{margin-top:12px}
 
 /* ===== 弹窗 ===== */
 .modal-backdrop{

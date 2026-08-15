@@ -5,8 +5,10 @@
 const STORAGE_KEY = 'hobby-diary:v1';
 const THEME_KEY = 'hobby-diary:theme';
 const FOCUS_KEY = 'hobby-diary:focus-session';
+const LOCK_KEY = 'hobby-diary:lock';
+const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.11.4';
+const APP_VERSION = '1.11.5';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -19,6 +21,7 @@ const MOODS = [
   { v: 5, emoji: '🤩', label: '超棒' }
 ];
 const CHANGELOG = [
+  { v: 'v1.11.5', text: '日期显示改为清晰的中文完整格式（安卓不再显示不全）；背景音乐音量再调大；新增可选的「应用锁」，保护隐私。' },
   { v: 'v1.11.4', text: '修复日历日期：应用在后台停留过夜后，回到前台会自动回到当天；背景音乐音量再调大一些。' },
   { v: 'v1.11.3', text: '应用图标换成新封面图片；修复了日历详情里照片无法预览的问题。' },
   { v: 'v1.11.2', text: '应用图标换成 Hobby Diary 封面图片，移除了自定义图标功能；设置页新增存储空间数据条；修复了照片退出后消失的问题。' },
@@ -41,7 +44,7 @@ const CHANGELOG = [
   { v: 'v1.2', text: '取消了“打卡”，点爱好卡片直接记一条；每条记录可以上传最多 9 张照片；爱好图标可以选 Emoji 或自己传图。' },
   { v: 'v1.0', text: '第一个版本：记录每天的爱好的 app，可以看日历、统计，还能备份数据。' }
 ];
-const dataPanels = { backup: false, changelog: false, storage: false, theme: false, danger: false };
+const dataPanels = { backup: false, changelog: false, storage: false, lock: false, theme: false, danger: false };
 const SAMPLE_HOBBIES = [
   { name: '画画', emoji: '🎨', color: '#5C6BC0' },
   { name: '阅读', emoji: '📚', color: '#4CAF50' },
@@ -240,6 +243,7 @@ function renderToday() {
       <button class="icon-btn" data-action="shift-day" data-offset="-1" title="前一天">‹</button>
       <div class="date-chip${bumpDate ? ' bump' : ''}">
         <span class="date-chip-ico">🗓️</span>
+        <span class="date-text">${parseDate(currentDate).getFullYear()}年${fmtCnDate(currentDate)} ${weekLabel(currentDate)}</span>
         <input type="date" class="date-input" value="${currentDate}" aria-label="选择日期">
       </div>
       <button class="icon-btn" data-action="shift-day" data-offset="1" title="后一天">›</button>
@@ -515,6 +519,15 @@ function renderData() {
     ${panelCard('storage', '📦 存储空间', `
       <div class="storage-bar"><div class="storage-bar-fill" id="storage-bar-fill" style="width:0%"></div></div>
       <div class="storage-text" id="storage-text">计算中…</div>`)}
+    ${panelCard('lock', '🔒 应用锁', `
+      <p class="setting-desc">设置后，打开应用需要输入密码才能查看，防止别人看到你的记录和照片（密码只保存在本机，不会上传）。</p>
+      <label>新密码<input type="password" id="lock-new" placeholder="至少 4 位" autocomplete="off"></label>
+      <label>再次输入<input type="password" id="lock-confirm" placeholder="再输一次" autocomplete="off"></label>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="lock-save">保存密码</button>
+        ${localStorage.getItem(LOCK_KEY) ? '<button class="btn-secondary" data-action="lock-disable">关闭应用锁</button>' : ''}
+      </div>
+      ${localStorage.getItem(LOCK_KEY) ? '<label>当前密码（关闭时需要）<input type="password" id="lock-current" placeholder="输入当前密码" autocomplete="off"></label>' : ''}`)}
     ${panelCard('theme', '🕶 外观', `
       <div class="btn-row">
         <button class="btn-secondary ${theme === 'light' ? 'on' : ''}" data-action="set-theme" data-theme="light">☀️ 浅色</button>
@@ -992,6 +1005,33 @@ function onAction(action, el) {
       }
       break;
     }
+    case 'lock-save': {
+      const a = $('#lock-new') ? $('#lock-new').value : '';
+      const b = $('#lock-confirm') ? $('#lock-confirm').value : '';
+      if (!a || a.length < 4) { toast('密码至少 4 位'); return; }
+      if (a !== b) { toast('两次输入的密码不一致'); return; }
+      hashPassword(a).then(h => {
+        localStorage.setItem(LOCK_KEY, h);
+        renderData();
+        toast('应用锁已开启 🔒');
+      });
+      break;
+    }
+    case 'lock-disable': {
+      const cur = $('#lock-current') ? $('#lock-current').value : '';
+      if (!cur) { toast('请输入当前密码'); return; }
+      hashPassword(cur).then(h => {
+        if (h === localStorage.getItem(LOCK_KEY)) {
+          localStorage.removeItem(LOCK_KEY);
+          renderData();
+          toast('应用锁已关闭');
+        } else {
+          toast('密码错误');
+        }
+      });
+      break;
+    }
+    case 'lock-unlock': lockUnlock(); break;
     case 'toggle-focus-card': {
       const active = focusSession && (focusSession.running || focusSession.pausedAt);
       if (!active) {
@@ -1089,6 +1129,46 @@ async function updateStorageInfo() {
     }
   } catch (err) {
     text.textContent = '暂时无法获取存储空间';
+  }
+}
+
+/* ============ 应用锁 ============ */
+function simpleHash(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return 'h' + h.toString(16);
+}
+async function hashPassword(pwd) {
+  const salted = 'hobby-diary:' + pwd;
+  if (window.crypto && crypto.subtle) {
+    try {
+      const data = new TextEncoder().encode(salted);
+      const buf = await crypto.subtle.digest('SHA-256', data);
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (err) { /* 走简易哈希兜底 */ }
+  }
+  return simpleHash(salted);
+}
+function showLockScreen() {
+  $('#lock-screen').classList.remove('hidden');
+  const input = $('#lock-input');
+  if (input) { input.value = ''; input.focus(); }
+}
+function hideLockScreen() {
+  $('#lock-screen').classList.add('hidden');
+}
+async function lockUnlock() {
+  const input = $('#lock-input');
+  const v = input ? input.value : '';
+  if (!v) { toast('请输入密码'); return; }
+  const h = await hashPassword(v);
+  if (h === localStorage.getItem(LOCK_KEY)) {
+    sessionStorage.setItem(LOCK_SESSION_KEY, '1');
+    hideLockScreen();
+    toast('已解锁 🔓');
+  } else {
+    toast('密码错误');
+    if (input) input.value = '';
   }
 }
 
@@ -1238,6 +1318,7 @@ async function init() {
     }
   }, 1000);
   renderAll();
+  if (localStorage.getItem(LOCK_KEY) && sessionStorage.getItem(LOCK_SESSION_KEY) !== '1') showLockScreen();
   registerSW();
 }
 document.addEventListener('DOMContentLoaded', init);

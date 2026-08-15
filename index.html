@@ -14,7 +14,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" id="favicon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=1.11.4">
+<link rel="stylesheet" href="styles.css?v=1.11.5">
 </head>
 <body>
 <div id="app">
@@ -22,7 +22,7 @@
     <div class="brand">
       <span class="brand-logo" id="brand-logo">🌸</span>
       <div class="brand-text">
-        <h1>Hobby Diary<span class="version-tag" id="version-tag">v1.11.4</span></h1>
+        <h1>Hobby Diary<span class="version-tag" id="version-tag">v1.11.5</span></h1>
         <p id="header-sub"></p>
       </div>
     </div>
@@ -59,6 +59,15 @@
 
 <div id="toast" class="toast"></div>
 
+<div id="lock-screen" class="lock-screen hidden">
+  <div class="lock-box">
+    <div class="lock-emoji">🔒</div>
+    <div class="lock-title">Hobby Diary</div>
+    <input type="password" id="lock-input" placeholder="请输入密码" autocomplete="off">
+    <button class="btn-primary" data-action="lock-unlock">解锁</button>
+  </div>
+</div>
+
 <div id="update-banner" class="update-banner hidden" data-action="apply-update">
   <span>✨ 发现新版本，点击重启应用</span>
   <button class="update-close" data-action="dismiss-update" title="稍后再说">✕</button>
@@ -71,6 +80,6 @@
 
 <script src="audio.js"></script>
 <script src="photoStore.js"></script>
-<script src="app.js?v=1.11.4"></script>
+<script src="app.js?v=1.11.5"></script>
 </body>
 </html>
