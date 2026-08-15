@@ -45,7 +45,7 @@ AGENTS.md             本说明
 
 - hobbies：`{ id, name, emoji, color, createdAt }`，其中 emoji 可以是 Emoji 字符，也可以是上传图片压缩后的 data URL
 - records：`{ id, date(YYYY-MM-DD), hobbyId, minutes(可选), mood(1-5), note, photos(照片 ID 数组，最多 9 张，实际二进制存于 IndexedDB), createdAt }`
-- localStorage 键：`hobby-diary:v1`（数据）、`hobby-diary:theme`（主题）、`hobby-diary:focus-session`（专注计时会话）、`hobby-diary:lock`（应用锁密码哈希，仅本机保存）
+- localStorage 键：`hobby-diary:v1`（数据）、`hobby-diary:theme`（主题）、`hobby-diary:focus-session`（专注计时会话）、`hobby-diary:lock`（应用锁密码哈希，仅本机保存）、`hobby-diary:music-style`（背景音乐风格）
 
 ## 代码规范
 

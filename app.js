@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.11.5';
+const APP_VERSION = '1.11.6';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -20,7 +20,9 @@ const MOODS = [
   { v: 4, emoji: '🙂', label: '不错' },
   { v: 5, emoji: '🤩', label: '超棒' }
 ];
+const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力' };
 const CHANGELOG = [
+  { v: 'v1.11.6', text: '背景音乐新增 4 种风格（宁静 / 钢琴 / 轻快 / 活力），设置页可切换；音量再调大。' },
   { v: 'v1.11.5', text: '日期显示改为清晰的中文完整格式（安卓不再显示不全）；背景音乐音量再调大；新增可选的「应用锁」，保护隐私。' },
   { v: 'v1.11.4', text: '修复日历日期：应用在后台停留过夜后，回到前台会自动回到当天；背景音乐音量再调大一些。' },
   { v: 'v1.11.3', text: '应用图标换成新封面图片；修复了日历详情里照片无法预览的问题。' },
@@ -44,7 +46,7 @@ const CHANGELOG = [
   { v: 'v1.2', text: '取消了“打卡”，点爱好卡片直接记一条；每条记录可以上传最多 9 张照片；爱好图标可以选 Emoji 或自己传图。' },
   { v: 'v1.0', text: '第一个版本：记录每天的爱好的 app，可以看日历、统计，还能备份数据。' }
 ];
-const dataPanels = { backup: false, changelog: false, storage: false, lock: false, theme: false, danger: false };
+const dataPanels = { backup: false, changelog: false, storage: false, lock: false, music: false, theme: false, danger: false };
 const SAMPLE_HOBBIES = [
   { name: '画画', emoji: '🎨', color: '#5C6BC0' },
   { name: '阅读', emoji: '📚', color: '#4CAF50' },
@@ -528,6 +530,14 @@ function renderData() {
         ${localStorage.getItem(LOCK_KEY) ? '<button class="btn-secondary" data-action="lock-disable">关闭应用锁</button>' : ''}
       </div>
       ${localStorage.getItem(LOCK_KEY) ? '<label>当前密码（关闭时需要）<input type="password" id="lock-current" placeholder="输入当前密码" autocomplete="off"></label>' : ''}`)}
+    ${panelCard('music', '🎵 背景音乐', `
+      <p class="setting-desc">选择喜欢的纯音乐风格；顶部 🎵 按钮可随时静音。</p>
+      <div class="music-styles">
+        ${Object.keys(MUSIC_STYLE_LABELS).map(name => {
+          const cur = localStorage.getItem('hobby-diary:music-style') || 'calm';
+          return `<button class="music-style-btn ${cur === name ? 'on' : ''}" data-action="music-style" data-style="${name}">${MUSIC_STYLE_LABELS[name]}</button>`;
+        }).join('')}
+      </div>`)}
     ${panelCard('theme', '🕶 外观', `
       <div class="btn-row">
         <button class="btn-secondary ${theme === 'light' ? 'on' : ''}" data-action="set-theme" data-theme="light">☀️ 浅色</button>
@@ -994,6 +1004,12 @@ function onAction(action, el) {
     case 'dismiss-update': dismissUpdate(); break;
     case 'check-update': checkForUpdates(true); break;
     case 'toggle-music': MusicPlayer.toggle(); break;
+    case 'music-style': {
+      MusicPlayer.setStyle(el.dataset.style);
+      renderData();
+      toast(`已切换到「${MUSIC_STYLE_LABELS[el.dataset.style] || el.dataset.style}」风格`);
+      break;
+    }
     case 'open-changelog': {
       openModal('更新说明', `<div class="changelog">${CHANGELOG.map(item => `<div class="cl-item"><span class="cl-v">${item.v}</span><p>${item.text}</p></div>`).join('')}</div>`);
       break;
