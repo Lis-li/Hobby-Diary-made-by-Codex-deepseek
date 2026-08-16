@@ -180,7 +180,7 @@ async function main() {
   await send('Page.navigate', { url: BASE + 'hobbies' });
   await wait(800);
   const hobbyCountBefore = await ev(`document.querySelectorAll('.hobby-item').length`);
-  const groupHeadCount = await ev(`document.querySelectorAll('#view-hobbies .group-head').length`);
+  const projectGroupCount = await ev(`document.querySelectorAll('.project-group').length`);
   await ev(`document.querySelector('[data-action="add-hobby"]').click()`);
   await wait(400);
   const emojiCount = await ev(`document.querySelectorAll('.emoji-opt').length`);
@@ -194,17 +194,16 @@ async function main() {
   const hobbyImgIcon = await ev(`!!document.querySelector('.hobby-item .hobby-emoji.img')`);
 
   /* 第二阶段：工作/健康分类记录 */
-  await ev(`document.querySelector('[data-action="add-hobby"]').click()`);
+  await ev(`document.querySelector('[data-action="add-hobby"][data-category="work"]').click()`);
   await wait(300);
-  await ev(`document.querySelector('[data-action="pick-project-category"][data-category="work"]').click()`);
   const workEmojiCount = await ev(`document.querySelectorAll('#hobby-emoji-grid .emoji-opt').length`);
   const workEmojiHasBriefcase = await ev(`document.querySelector('#hobby-emoji-grid').textContent.includes('💼')`);
   await ev(`(()=>{const f=document.querySelector('#hobby-form'); f.querySelector('[name="name"]').value='工作项目A'; f.requestSubmit(); return true;})()`);
   await wait(400);
-  await ev(`document.querySelector('[data-action="add-hobby"]').click()`);
+  await ev(`document.querySelector('[data-action="add-hobby"][data-category="health"]').click()`);
   await wait(300);
-  await ev(`document.querySelector('[data-action="pick-project-category"][data-category="health"]').click()`);
   const healthEmojiCount = await ev(`document.querySelectorAll('#hobby-emoji-grid .emoji-opt').length`);
+  const healthProjectMetricBtns = await ev(`document.querySelectorAll('.status-btn[data-action="pick-project-metric"]').length`);
   await ev(`(()=>{const f=document.querySelector('#hobby-form'); f.querySelector('[name="name"]').value='健康项目A'; f.requestSubmit(); return true;})()`);
   await wait(400);
   await ev(`document.querySelector('[data-action="switch-tab"][data-tab="today"]').click()`);
@@ -214,6 +213,7 @@ async function main() {
   await ev(`document.querySelector('#view-today .hobby-card[data-action="open-record"]').click()`);
   await wait(400);
   const optgroupCount = await ev(`document.querySelectorAll('#record-form optgroup').length`);
+  const workOptionCount = await ev(`document.querySelectorAll('#record-form option').length`);
   const workStatusBtns = await ev(`document.querySelectorAll('.status-btn[data-action="pick-work-status"]').length`);
   await ev(`document.querySelector('[data-action="pick-work-status"][data-status="done"]').click()`);
   await ev(`(()=>{const f=document.querySelector('#record-form'); f.querySelector('[name="note"]').value='完成了一个任务'; f.requestSubmit(); return true;})()`);
@@ -223,7 +223,7 @@ async function main() {
   await wait(300);
   await ev(`document.querySelector('#view-today .hobby-card[data-action="open-record"]').click()`);
   await wait(400);
-  const healthMetricBtns = await ev(`document.querySelectorAll('.status-btn[data-action="pick-health-metric"]').length`);
+  const healthValueInput = await ev(`!!document.querySelector('#health-value')`);
   await ev(`(()=>{const f=document.querySelector('#record-form'); document.querySelector('#health-value').value='65'; f.requestSubmit(); return true;})()`);
   await wait(400);
   const healthValueShown = await ev(`document.querySelector('#view-today .record-row').textContent.includes('体重')`);
@@ -280,7 +280,7 @@ async function main() {
   await wait(600);
   const lockScreenGone = await ev(`document.querySelector('#lock-screen').classList.contains('hidden')`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, dateText, catSwitchCount, statsChipCount, projectTabLabel, workCatEmpty, focusHiddenInHealth, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, groupHeadCount, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, workEmojiCount, workEmojiHasBriefcase, healthEmojiCount, optgroupCount, workStatusBtns, workStatusShown, healthMetricBtns, healthValueShown, healthChartArea, settingsTabLabel, storageBarShown, storageText, musicStyleCount, musicStyleSaved, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, lockScreenShown, lockScreenGone, versionShows21: versionText.includes('v2.1'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, dateText, catSwitchCount, statsChipCount, projectTabLabel, workCatEmpty, focusHiddenInHealth, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, projectGroupCount, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, workEmojiCount, workEmojiHasBriefcase, healthEmojiCount, healthProjectMetricBtns, optgroupCount, workOptionCount, workStatusBtns, workStatusShown, healthValueInput, healthValueShown, healthChartArea, settingsTabLabel, storageBarShown, storageText, musicStyleCount, musicStyleSaved, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, lockScreenShown, lockScreenGone, versionShows22: versionText.includes('v2.2'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();

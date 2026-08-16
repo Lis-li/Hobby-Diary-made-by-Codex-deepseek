@@ -147,6 +147,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   font-size:14px;font-weight:700;margin:18px 0 10px;padding-left:10px;
   border-left:4px solid var(--accent);
 }
+.project-group{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.project-banner{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  width:100%;padding:0;background:none;border:none;cursor:pointer;touch-action:manipulation;
+}
+.project-banner .setting-title{margin-bottom:0}
+.project-add{
+  display:block;width:100%;margin:10px 0 0;padding:9px;border-radius:10px;
+  background:var(--bg-soft);color:var(--text-soft);font-size:12.5px;font-weight:600;touch-action:manipulation;
+}
 .cal-group{margin-bottom:12px}
 .cal-group-title{font-size:12.5px;font-weight:700;color:var(--text-soft);margin-bottom:8px}
 .stat-chips{display:flex;gap:6px;margin:4px 0 12px;overflow-x:auto;padding-bottom:2px}
