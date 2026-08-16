@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '2.3';
+const APP_VERSION = '2.4';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -37,6 +37,7 @@ const CATEGORIES = {
 };
 const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力' };
 const CHANGELOG = [
+  { v: 'v2.4', text: '项目页去掉分类下的添加入口（顶部按钮记住上次分类）；统计页去掉「全部」只保留分类统计，健康统计隐藏专注时长；添加项目弹窗布局统一，健康不再单独排布。' },
   { v: 'v2.3', text: '健康分类直接内置体重、血糖、血压三个项目（首次使用自动出现，可自行删除）。' },
   { v: 'v2.2', text: '项目页三个分类改为可收缩横幅；健康指标（体重/血糖/血压）改为项目自带（提供三个模板），记录时不再强制选指标；记录弹窗只显示当前分类的项目，添加项目时分类跟随入口。' },
   { v: 'v2.1', text: '今日页健康分类取消专注计时；底部「爱好」改名「项目」；项目图标按分类区分（工作图标更丰富、健康仅体重/血糖/血压）；记录弹窗项目按分类分组显示。' },
@@ -123,7 +124,7 @@ let focusSaveMinutes = 0;
 let focusCardOpen = false;
 let lastToday = todayStr();
 let todayCategory = localStorage.getItem('hobby-diary:today-category') || 'hobby';
-let statsCategory = 'all';
+let statsCategory = 'hobby';
 let selectedProjectCategory = 'hobby';
 let selectedProjectMetric = 'weight';
 let selectedWorkStatus = 'doing';
@@ -464,9 +465,7 @@ function renderCalendar() {
 function renderStats() {
   const el = $('#view-stats');
   if (!el) return;
-  const filtered = statsCategory === 'all'
-    ? state.records
-    : state.records.filter(r => { const h = hobbyById(r.hobbyId); return h && (h.category || 'hobby') === statsCategory; });
+  const filtered = state.records.filter(r => { const h = hobbyById(r.hobbyId); return h && (h.category || 'hobby') === statsCategory; });
   const daysAll = [...new Set(filtered.map(r => r.date))].sort();
   const days14 = [];
   for (let i = 13; i >= 0; i--) days14.push(addDays(todayStr(), -i));
@@ -482,7 +481,6 @@ function renderStats() {
   const weekMin = filtered.filter(r => r.date >= weekStart && r.date <= todayStr()).reduce((s, r) => s + (r.minutes || 0), 0);
   const chips = `
     <div class="stat-chips">
-      <button class="stat-chip ${statsCategory === 'all' ? 'on' : ''}" data-action="stats-category" data-category="all">全部</button>
       ${Object.keys(CATEGORIES).map(key => `<button class="stat-chip ${statsCategory === key ? 'on' : ''}" data-action="stats-category" data-category="${key}">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</button>`).join('')}
     </div>`;
   const healthChart = statsCategory === 'health' ? renderHealthChartHtml() : '';
@@ -497,7 +495,7 @@ function renderStats() {
     </div>`;
   }).join('');
 
-  const projects = state.hobbies.filter(h => statsCategory === 'all' || (h.category || 'hobby') === statsCategory);
+  const projects = state.hobbies.filter(h => (h.category || 'hobby') === statsCategory);
   const ranked = projects.map(h => ({ h, s: hobbyStats(h.id) }))
     .sort((a, b) => b.s.count - a.s.count || b.s.minutes - a.s.minutes);
   const rows = ranked.length
@@ -512,14 +510,15 @@ function renderStats() {
       </div>`).join('')
     : '<div class="empty-card">这个分类还没有数据，去今日页开始记录吧。</div>';
 
+  const showFocusCards = statsCategory !== 'health';
   el.innerHTML = chips + `
     <div class="stat-cards">
       <div class="stat-card"><b>${msActive}</b><span>本月记录天数</span></div>
       <div class="stat-card"><b>${total}</b><span>累计记录</span></div>
       <div class="stat-card"><b>${cur}</b><span>当前连续</span></div>
       <div class="stat-card"><b>${longest}</b><span>最长连续</span></div>
-      <div class="stat-card"><b>${todayMin}</b><span>今日专注（分钟）</span></div>
-      <div class="stat-card"><b>${weekMin}</b><span>近7天专注（分钟）</span></div>
+      ${showFocusCards ? `<div class="stat-card"><b>${todayMin}</b><span>今日专注（分钟）</span></div>
+      <div class="stat-card"><b>${weekMin}</b><span>近7天专注（分钟）</span></div>` : ''}
     </div>
     <div class="section-title">最近 14 天</div>
     <div class="chart">${bars}</div>
@@ -583,7 +582,6 @@ function renderHobbies() {
         <span class="setting-title">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}（${items.length}）</span>
         <span class="setting-arrow">▾</span>
       </button>
-      <button class="project-add" data-action="add-hobby" data-category="${key}">＋ 添加${CATEGORIES[key].name}项目</button>
       <div class="setting-body">${items.length ? `<div class="hobby-list">${itemHtml}</div>` : '<div class="empty-card small">还没有项目</div>'}</div>
     </div>`;
   }).join('');
@@ -839,13 +837,12 @@ function openHobbyModal(hobby, presetCategory) {
       <input type="hidden" name="id" value="${hobby ? hobby.id : ''}">
       <label>分类</label>
       <div class="cat-pick">${catBtns}</div>
-      <div id="hobby-metric-picker"></div>
       <label>图标</label>
       <div class="icon-preview" id="hobby-icon-preview"></div>
       <div class="emoji-grid" id="hobby-emoji-grid"></div>
       <label class="btn-secondary photo-add" for="hobby-icon-input">🖼 上传图片作图标</label>
       <input type="file" id="hobby-icon-input" accept="image/*" hidden>
-      <label>名称<input name="name" required maxlength="20" value="${hobby ? escapeHtml(hobby.name) : (selectedProjectCategory === 'health' ? metricLabel(selectedProjectMetric) : '')}" placeholder="例如：画画"></label>
+      <label>名称<input name="name" required maxlength="20" value="${hobby ? escapeHtml(hobby.name) : ''}" placeholder="例如：画画"></label>
       <label>颜色</label>
       <div class="color-picker">${dots}</div>
       <div class="modal-actions">
@@ -855,7 +852,6 @@ function openHobbyModal(hobby, presetCategory) {
     </form>`);
   renderIconPreview();
   renderEmojiGrid();
-  renderProjectMetricPicker();
   $('#hobby-icon-input').addEventListener('change', () => {
     const file = $('#hobby-icon-input').files[0];
     $('#hobby-icon-input').value = '';
@@ -871,15 +867,6 @@ function openHobbyModal(hobby, presetCategory) {
     $$('#modal-body .color-dot').forEach(x => x.classList.toggle('on', x === b));
   }));
   $('#hobby-form').addEventListener('submit', onHobbySubmit);
-}
-function renderProjectMetricPicker() {
-  const box = $('#hobby-metric-picker');
-  if (!box) return;
-  if (selectedProjectCategory !== 'health') { box.innerHTML = ''; return; }
-  box.innerHTML = `<label>指标模板</label>
-    <div class="status-picker">
-      ${['weight', 'bloodSugar', 'bloodPressure'].map(m => `<button type="button" class="status-btn ${selectedProjectMetric === m ? 'on' : ''}" data-action="pick-project-metric" data-metric="${m}">${HEALTH_METRIC_ICONS[m]} ${metricLabel(m)}</button>`).join('')}
-    </div>`;
 }
 function renderEmojiGrid() {
   const grid = $('#hobby-emoji-grid');
@@ -901,13 +888,13 @@ function onHobbySubmit(e) {
   const emoji = selectedIcon || '🎯';
   const color = selectedColor || COLOR_PRESETS[0];
   const category = selectedProjectCategory || 'hobby';
-  const metric = category === 'health' ? selectedProjectMetric : null;
+  localStorage.setItem('hobby-diary:last-project-category', category);
   if (id) {
     const h = hobbyById(id);
-    if (h) { h.name = name; h.emoji = emoji; h.color = color; h.category = category; h.metric = metric; }
+    if (h) { h.name = name; h.emoji = emoji; h.color = color; h.category = category; h.metric = category === 'health' ? (h.metric || 'weight') : null; }
     toast('已更新');
   } else {
-    state.hobbies.push({ id: uid(), name, emoji, color, category, metric, createdAt: Date.now() });
+    state.hobbies.push({ id: uid(), name, emoji, color, category, metric: category === 'health' ? 'weight' : null, createdAt: Date.now() });
     toast('已添加爱好 🎨');
   }
   saveState();
@@ -1196,7 +1183,7 @@ function onAction(action, el) {
       break;
     }
     case 'go-current-month': calendarCursor = todayStr().slice(0, 7); selectedCalendarDate = todayStr(); renderCalendar(); break;
-    case 'add-hobby': openHobbyModal(null, el.dataset.category); break;
+    case 'add-hobby': openHobbyModal(null, el.dataset.category || localStorage.getItem('hobby-diary:last-project-category') || 'hobby'); break;
     case 'edit-hobby': openHobbyModal(hobbyById(el.dataset.id)); break;
     case 'delete-hobby': deleteHobby(el.dataset.id); break;
     case 'export-data': exportData(); break;
@@ -1230,7 +1217,7 @@ function onAction(action, el) {
       break;
     }
     case 'stats-category': {
-      if (el.dataset.category === 'all' || CATEGORIES[el.dataset.category]) {
+      if (CATEGORIES[el.dataset.category]) {
         statsCategory = el.dataset.category;
         renderStats();
       }
@@ -1240,28 +1227,7 @@ function onAction(action, el) {
       if (CATEGORIES[el.dataset.category]) {
         selectedProjectCategory = el.dataset.category;
         selectedIcon = CATEGORY_DEFAULT_EMOJI[el.dataset.category] || '🎯';
-        if (el.dataset.category === 'health') {
-          selectedProjectMetric = 'weight';
-          const nameInput = $('#hobby-form [name="name"]');
-          if (nameInput && !nameInput.value.trim()) nameInput.value = '体重';
-        }
         $$('#modal-body .cat-pick-btn').forEach(b => b.classList.toggle('on', b.dataset.category === el.dataset.category));
-        renderEmojiGrid();
-        renderIconPreview();
-        renderProjectMetricPicker();
-      }
-      break;
-    }
-    case 'pick-project-metric': {
-      selectedProjectMetric = el.dataset.metric;
-      if (selectedProjectCategory === 'health') {
-        selectedIcon = HEALTH_METRIC_ICONS[selectedProjectMetric] || selectedIcon;
-        const nameInput = $('#hobby-form [name="name"]');
-        if (nameInput) {
-          const cur = nameInput.value.trim();
-          if (!cur || cur === '体重' || cur === '血糖' || cur === '血压') nameInput.value = metricLabel(selectedProjectMetric);
-        }
-        $$('#modal-body .status-btn[data-action="pick-project-metric"]').forEach(b => b.classList.toggle('on', b.dataset.metric === el.dataset.metric));
         renderEmojiGrid();
         renderIconPreview();
       }
