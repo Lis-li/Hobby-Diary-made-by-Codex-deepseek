@@ -1,7 +1,7 @@
 {
-  "name": "Hobby Diary - 每日爱好记录",
-  "short_name": "Hobby Diary",
-  "description": "记录每日爱好的本地应用：记录、日历、统计、照片与数据备份。",
+  "name": "TraceLife - 生活记录",
+  "short_name": "TraceLife",
+  "description": "记录生活的本地应用：爱好、工作、健康记录、日历、统计与数据备份。",
   "lang": "zh-CN",
   "start_url": "./index.html",
   "scope": "./",

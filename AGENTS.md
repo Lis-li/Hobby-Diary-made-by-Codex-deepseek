@@ -2,7 +2,7 @@
 
 ## 项目简介
 
-爱好日记是一个零依赖、可离线使用的本地 Web 应用（PWA），用于记录每日爱好。每条记录可填写心情、备注并上传多张照片；部署在 GitHub Pages 与 Cloudflare Pages（国内可直连），手机和电脑均可访问。
+TraceLife（前身：爱好日记 / Hobby Diary）是一个零依赖、可离线使用的本地 Web 应用（PWA），用于记录每日生活（爱好、工作、健康）。每条记录可填写心情、备注并上传多张照片；部署在 GitHub Pages 与 Cloudflare Pages（国内可直连），手机和电脑均可访问。
 
 ## 技术栈
 
@@ -36,7 +36,7 @@ AGENTS.md             本说明
 
 ## 部署说明
 
-- GitHub Pages：https://lis-li.github.io/Hobby-Diary-made-by-Codex-deepseek/ （境外，国内访问可能慢）
+- GitHub Pages：https://lis-li.github.io/TraceLife/ （境外，国内访问可能慢）
 - Cloudflare Pages：https://hobby-diary.pages.dev/ （国内一般可直连，作为国内主要入口）
 - 两处部署同一套静态文件；数据都存在各设备浏览器本地，不随站点同步，换入口需手动导出/导入备份
 - 若在 Cloudflare 控制台把仓库连上 Git 集成，推送到 main 也会自动部署到 Pages（当前为 wrangler 手动上传）

@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '2.6';
+const APP_VERSION = '2.7';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -35,8 +35,9 @@ const CATEGORIES = {
   work: { name: '工作', emoji: '💼', color: '#5C6BC0' },
   health: { name: '健康', emoji: '💪', color: '#4CAF50' }
 };
-const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力' };
+const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力', electronic: '电子', island: '海岛' };
 const CHANGELOG = [
+  { v: 'v2.7', text: '应用改名为 TraceLife；背景音乐新增「电子」「海岛」两种风格（共 6 种），修复切换风格时旧声音残留的问题。' },
   { v: 'v2.6', text: '健康折线图的数据点支持悬停/点击查看具体数值。' },
   { v: 'v2.5', text: '体重每天分早/中/晚三组、血糖分空腹/餐后2小时/睡前三组（可分批补录）；折线图同一天不连线、同时间段跨天连线，并补上坐标轴与单位；修正「爱好/项目」文案。' },
   { v: 'v2.4', text: '项目页去掉分类下的添加入口（顶部按钮记住上次分类）；统计页去掉「全部」只保留分类统计，健康统计隐藏专注时长；添加项目弹窗布局统一，健康不再单独排布。' },
@@ -692,7 +693,7 @@ function renderData() {
       <p class="setting-desc">删除所有项目和记录，且无法恢复。请先导出备份。</p>
       <button class="btn-danger" data-action="clear-data">清空全部数据</button>`, 'danger')}
     <div class="about">
-      <div>Hobby Diary · 本地版 v${APP_VERSION}</div>
+      <div>TraceLife · 本地版 v${APP_VERSION}</div>
       <div>当前数据约 ${sizeKb} KB（${state.hobbies.length} 个项目、${state.records.length} 条记录、${photoCount} 张照片）</div>
       <div>照片存储在大容量本地数据库，不再占用网页存储空间。</div>
       <button class="link-btn" data-action="check-update">🔄 检查更新</button>

@@ -1,6 +1,6 @@
-# 爱好日记（Hobby Diary）
+# TraceLife
 
-一个零依赖、可离线使用的本地 Web 应用，用来记录每天的爱好。
+一个零依赖、可离线使用的本地 Web 应用，用来记录每天的生活：爱好、工作、健康。
 
 ## 功能
 
@@ -21,7 +21,7 @@
 ## 线上地址
 
 - Cloudflare Pages（国内一般可直连，推荐）：https://hobby-diary.pages.dev/
-- GitHub Pages：https://lis-li.github.io/Hobby-Diary-made-by-Codex-deepseek/
+- GitHub Pages：https://lis-li.github.io/TraceLife/
 
 两个地址内容相同；数据都存在各设备浏览器本地，换地址使用时可先导出再导入备份。
 

@@ -86,6 +86,47 @@ const MusicPlayer = (() => {
         [196.00, 246.94, 293.66, 392.00]
       ],
       sparkles: [1318.51, 1567.98, 2093.00, 2637.02]
+    },
+    electronic: {
+      name: '电子',
+      chordSeconds: 3,
+      arpStep: 0.35,
+      padGain: 0.03,
+      pluckGain: 0.11,
+      sparkGain: 0.06,
+      padWave: 'sawtooth',
+      pluckWave: 'triangle',
+      octaveUp: false,
+      sparkEvery: 1,
+      bass: true,
+      bassGain: 0.16,
+      chords: [
+        [523.25, 659.25, 783.99, 1046.50],
+        [440.00, 523.25, 659.25, 880.00],
+        [349.23, 440.00, 523.25, 698.46],
+        [392.00, 493.88, 587.33, 783.99]
+      ],
+      sparkles: [1567.98, 2093.00, 2637.02, 3135.96]
+    },
+    island: {
+      name: '海岛',
+      chordSeconds: 6,
+      arpStep: 1,
+      padGain: 0.04,
+      pluckGain: 0.1,
+      sparkGain: 0.06,
+      padWave: 'triangle',
+      pluckWave: 'triangle',
+      octaveUp: true,
+      sparkEvery: 1,
+      bass: false,
+      chords: [
+        [261.63, 293.66, 329.63, 392.00],
+        [220.00, 261.63, 293.66, 329.63],
+        [196.00, 220.00, 261.63, 329.63],
+        [293.66, 329.63, 392.00, 440.00]
+      ],
+      sparkles: [1046.50, 1318.51, 1567.98, 2093.00]
     }
   };
 
@@ -96,6 +137,18 @@ const MusicPlayer = (() => {
   let muted = localStorage.getItem(MUSIC_KEY) === 'off';
   let chordIndex = 0;
   let chordTimer = null;
+  const activeNodes = new Set();
+
+  function trackNode(node) {
+    activeNodes.add(node);
+    node.addEventListener('ended', () => { activeNodes.delete(node); });
+  }
+  function stopAllNodes() {
+    activeNodes.forEach(n => {
+      try { n.stop && n.stop(); n.disconnect && n.disconnect(); } catch (e) { /* 忽略 */ }
+    });
+    activeNodes.clear();
+  }
 
   function currentStyle() {
     return STYLES[localStorage.getItem(STYLE_KEY)] || STYLES.calm;
@@ -129,6 +182,8 @@ const MusicPlayer = (() => {
     g.gain.linearRampToValueAtTime(0, t + dur);
     osc.connect(g);
     g.connect(master);
+    trackNode(osc);
+    trackNode(g);
     osc.start(t);
     osc.stop(t + dur + 0.1);
   }
@@ -143,6 +198,8 @@ const MusicPlayer = (() => {
     g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
     osc.connect(g);
     g.connect(master);
+    trackNode(osc);
+    trackNode(g);
     osc.start(t);
     osc.stop(t + 2.4);
   }
@@ -157,6 +214,8 @@ const MusicPlayer = (() => {
     g.gain.exponentialRampToValueAtTime(0.0001, t + 4);
     osc.connect(g);
     g.connect(master);
+    trackNode(osc);
+    trackNode(g);
     osc.start(t);
     osc.stop(t + 4.2);
   }
@@ -171,6 +230,8 @@ const MusicPlayer = (() => {
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
     osc.connect(g);
     g.connect(master);
+    trackNode(osc);
+    trackNode(g);
     osc.start(t);
     osc.stop(t + 0.5);
   }
@@ -211,6 +272,7 @@ const MusicPlayer = (() => {
   function stop() {
     playing = false;
     clearTimeout(chordTimer);
+    stopAllNodes();
     if (ctx) ctx.suspend().catch(() => {});
   }
 
@@ -220,6 +282,7 @@ const MusicPlayer = (() => {
     if (playing) {
       clearTimeout(chordTimer);
       playing = false;
+      stopAllNodes();
       start();
     }
   }
