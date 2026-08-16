@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '2.5';
+const APP_VERSION = '2.6';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -37,6 +37,7 @@ const CATEGORIES = {
 };
 const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力' };
 const CHANGELOG = [
+  { v: 'v2.6', text: '健康折线图的数据点支持悬停/点击查看具体数值。' },
   { v: 'v2.5', text: '体重每天分早/中/晚三组、血糖分空腹/餐后2小时/睡前三组（可分批补录）；折线图同一天不连线、同时间段跨天连线，并补上坐标轴与单位；修正「爱好/项目」文案。' },
   { v: 'v2.4', text: '项目页去掉分类下的添加入口（顶部按钮记住上次分类）；统计页去掉「全部」只保留分类统计，健康统计隐藏专注时长；添加项目弹窗布局统一，健康不再单独排布。' },
   { v: 'v2.3', text: '健康分类直接内置体重、血糖、血压三个项目（首次使用自动出现，可自行删除）。' },
@@ -579,12 +580,15 @@ function renderHealthChartHtml() {
   const vals = allPts.map(p => p.v);
   let min = Math.min(...vals), max = Math.max(...vals);
   if (min === max) { min -= 1; max += 1; }
+  const unit = metricUnit(healthMetric).trim();
   const lines = series.map(s => {
     const pts = s.pts.map(p => [x(p.date), y(p.v)]);
     return pts.length > 1 ? `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${s.color}" stroke-width="2"/>` : '';
   }).join('');
-  const dots = series.map(s => s.pts.map(p => `<circle cx="${x(p.date)}" cy="${y(p.v)}" r="3.4" fill="${s.color}"/>`).join('')).join('');
-  const unit = metricUnit(healthMetric).trim();
+  const dots = series.map(s => s.pts.map(p => {
+    const tip = `${s.label} ${p.v} ${unit} · ${fmtShortDate(p.date)}`;
+    return `<circle class="chart-dot" cx="${x(p.date)}" cy="${y(p.v)}" r="3.6" fill="${s.color}" data-tip="${tip}"/>`;
+  }).join('')).join('');
   const axis = `
     <line x1="${padL}" y1="${y(max)}" x2="${padL}" y2="${y(min)}" stroke="#ccc" stroke-width="1"/>
     <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="#ccc" stroke-width="1"/>
@@ -695,6 +699,25 @@ function renderData() {
       <div>支持离线使用；发现新版本时顶部会提示一键更新。</div>
     </div>`;
   updateStorageInfo();
+}
+
+function showChartTooltip(dot) {
+  const tip = $('#chart-tooltip');
+  if (!tip) return;
+  tip.textContent = dot.dataset.tip || '';
+  const svg = dot.closest('svg');
+  if (!svg || !svg.getScreenCTM) return;
+  const pt = svg.createSVGPoint();
+  pt.x = Number(dot.getAttribute('cx'));
+  pt.y = Number(dot.getAttribute('cy'));
+  const sp = pt.matrixTransform(svg.getScreenCTM());
+  tip.style.left = sp.x + 'px';
+  tip.style.top = (sp.y - 8) + 'px';
+  tip.classList.remove('hidden');
+}
+function hideChartTooltip() {
+  const tip = $('#chart-tooltip');
+  if (tip) tip.classList.add('hidden');
 }
 
 /* ============ 弹窗 ============ */
@@ -1426,6 +1449,13 @@ function bindEvents() {
   });
   document.addEventListener('hobby-music-started', () => toast('音乐已开启 🎵'));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) renderAll(); });
+  document.addEventListener('mouseover', e => { const d = e.target.closest('.chart-dot'); if (d) showChartTooltip(d); });
+  document.addEventListener('mouseout', e => { if (e.target.closest('.chart-dot')) hideChartTooltip(); });
+  document.addEventListener('click', e => {
+    const d = e.target.closest('.chart-dot');
+    if (d) showChartTooltip(d);
+    else if (!e.target.closest('.chart-tooltip')) hideChartTooltip();
+  });
   $('#modal-backdrop').addEventListener('click', e => { if (e.target.id === 'modal-backdrop') closeModal(); });
   $('#lightbox').addEventListener('click', e => { if (e.target.id === 'lightbox') closeLightbox(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
