@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>TraceLife</title>
-<meta name="description" content="记录每日爱好的本地应用：打卡、日历、统计与数据备份。">
+<meta name="description" content="记录每天生活的本地应用：爱好、工作、健康记录、日历、统计与数据备份。">
 <meta name="theme-color" content="#FF8A65">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,14 +14,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" id="favicon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=2.7.1">
+<link rel="stylesheet" href="styles.css?v=2.7.2">
 </head>
 <body>
 <div id="app">
   <header class="app-header">
     <div class="brand">
       <div class="brand-text">
-        <h1>TraceLife<span class="version-tag" id="version-tag">v2.7.1</span></h1>
+        <h1>TraceLife<span class="version-tag" id="version-tag">v2.7.2</span></h1>
         <p id="header-sub"></p>
       </div>
     </div>
@@ -39,11 +39,11 @@
 </div>
 
 <nav class="tab-bar">
-  <button class="tab-btn active" data-action="switch-tab" data-tab="today"><span class="tab-ico">📝</span><span>今日</span></button>
-  <button class="tab-btn" data-action="switch-tab" data-tab="calendar"><span class="tab-ico">🗓</span><span>日历</span></button>
-  <button class="tab-btn" data-action="switch-tab" data-tab="stats"><span class="tab-ico">📊</span><span>统计</span></button>
-  <button class="tab-btn" data-action="switch-tab" data-tab="hobbies"><span class="tab-ico">🎨</span><span>项目</span></button>
-  <button class="tab-btn" data-action="switch-tab" data-tab="data"><span class="tab-ico">⚙️</span><span>设置</span></button>
+  <button class="tab-btn active" data-action="switch-tab" data-tab="today"><span class="tab-ico">📝</span><span id="tab-today">今日</span></button>
+  <button class="tab-btn" data-action="switch-tab" data-tab="calendar"><span class="tab-ico">🗓</span><span id="tab-calendar">日历</span></button>
+  <button class="tab-btn" data-action="switch-tab" data-tab="stats"><span class="tab-ico">📊</span><span id="tab-stats">统计</span></button>
+  <button class="tab-btn" data-action="switch-tab" data-tab="hobbies"><span class="tab-ico">🎨</span><span id="tab-projects">项目</span></button>
+  <button class="tab-btn" data-action="switch-tab" data-tab="data"><span class="tab-ico">⚙️</span><span id="tab-settings">设置</span></button>
 </nav>
 
 <div id="modal-backdrop" class="modal-backdrop hidden">
@@ -81,6 +81,6 @@
 <script src="audio.js"></script>
 <script src="photoStore.js"></script>
 <script src="lang.js"></script>
-<script src="app.js?v=2.7.1"></script>
+<script src="app.js?v=2.7.2"></script>
 </body>
 </html>

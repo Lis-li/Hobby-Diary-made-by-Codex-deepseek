@@ -1,7 +1,7 @@
 {
   "name": "TraceLife - 生活记录",
   "short_name": "TraceLife",
-  "description": "记录生活的本地应用：爱好、工作、健康记录、日历、统计与数据备份。",
+  "description": "每天的生活记录：爱好、工作、健康，日历、统计与数据备份。",
   "lang": "zh-CN",
   "start_url": "./index.html",
   "scope": "./",

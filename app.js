@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '2.7.1';
+const APP_VERSION = '2.7.2';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -37,6 +37,7 @@ const CATEGORIES = {
 };
 const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力', electronic: '电子', island: '海岛' };
 const CHANGELOG = [
+  { v: 'v2.7.2', text: '语言设置独立成项；修复英文版底部 Tab 未翻译；安卓启动描述更新为「每天的生活记录」。' },
   { v: 'v2.7.1', text: '顶部布局去花朵更清爽；新增「迁移助手」与中英文双语界面（设置 → 外观 → 语言）。' },
   { v: 'v2.7', text: '应用改名为 TraceLife；背景音乐新增「电子」「海岛」两种风格（共 6 种），修复切换风格时旧声音残留的问题。' },
   { v: 'v2.6', text: '健康折线图的数据点支持悬停/点击查看具体数值。' },
@@ -71,7 +72,7 @@ const CHANGELOG = [
   { v: 'v1.2', text: '取消了“打卡”，点爱好卡片直接记一条；每条记录可以上传最多 9 张照片；爱好图标可以选 Emoji 或自己传图。' },
   { v: 'v1.0', text: '第一个版本：记录每天的爱好的 app，可以看日历、统计，还能备份数据。' }
 ];
-const dataPanels = { backup: false, changelog: false, storage: false, lock: false, music: false, theme: false, danger: false };
+const dataPanels = { backup: false, changelog: false, storage: false, lock: false, music: false, lang: false, theme: false, danger: false };
 const projectGroupsOpen = { hobby: false, work: false, health: false };
 const SAMPLE_HOBBIES = [
   { name: '画画', emoji: '🎨', color: '#5C6BC0' },
@@ -258,6 +259,11 @@ function renderHeader() {
   if (tag) tag.textContent = 'v' + APP_VERSION;
   const bannerText = $('#update-banner span');
   if (bannerText) bannerText.textContent = T('✨ 发现新版本，点击重启应用');
+  const tabMap = { today: '今日', calendar: '日历', stats: '统计', projects: '项目', settings: '设置' };
+  Object.keys(tabMap).forEach(id => {
+    const el = $('#tab-' + id);
+    if (el) el.textContent = T(tabMap[id]);
+  });
 }
 
 function hobbyCardHtml(h, date) {
@@ -695,13 +701,12 @@ function renderData() {
           return `<button class="music-style-btn ${cur === name ? 'on' : ''}" data-action="music-style" data-style="${name}">${T(MUSIC_STYLE_LABELS[name])}</button>`;
         }).join('')}
       </div>`)}
-    ${panelCard('theme', '🕶 ' + T('外观'), `
-      <label>${T('语言')}</label>
+    ${panelCard('lang', '🌐 ' + T('语言'), `
       <div class="btn-row">
         <button class="btn-secondary ${lang === 'zh' ? 'on' : ''}" data-action="set-lang" data-lang="zh">中文</button>
         <button class="btn-secondary ${lang === 'en' ? 'on' : ''}" data-action="set-lang" data-lang="en">English</button>
-      </div>
-      <label>${T('外观')}</label>
+      </div>`)}
+    ${panelCard('theme', '🕶 ' + T('外观'), `
       <div class="btn-row">
         <button class="btn-secondary ${theme === 'light' ? 'on' : ''}" data-action="set-theme" data-theme="light">☀️ ${T('浅色')}</button>
         <button class="btn-secondary ${theme === 'dark' ? 'on' : ''}" data-action="set-theme" data-theme="dark">🌙 ${T('深色')}</button>

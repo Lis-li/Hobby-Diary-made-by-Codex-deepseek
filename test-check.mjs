@@ -260,6 +260,8 @@ async function main() {
   await ev(`document.querySelector('[data-action="set-lang"][data-lang="en"]').click()`);
   await wait(300);
   const enHeader = await ev(`document.querySelector('#header-sub').textContent`);
+  const enTabToday = await ev(`document.querySelector('#tab-today').textContent`);
+  const langPanelBtn = await ev(`!!document.querySelector('[data-action="toggle-panel"][data-panel="lang"]')`);
   await ev(`document.querySelector('[data-action="set-lang"][data-lang="zh"]').click()`);
   await wait(300);
 
@@ -291,7 +293,7 @@ async function main() {
   await wait(600);
   const lockScreenGone = await ev(`document.querySelector('#lock-screen').classList.contains('hidden')`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, dateText, catSwitchCount, statsChipCount, projectTabLabel, healthSeededCount, healthSeededNames, workCatEmpty, focusHiddenInHealth, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, projectGroupCount, perGroupAddCount, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, workEmojiCount, workEmojiHasBriefcase, healthEmojiCount, optgroupCount, workOptionCount, workStatusBtns, workStatusShown, healthPeriodInputs, healthValueInput, healthValueShown, healthChartArea, healthStatCards, settingsTabLabel, storageBarShown, storageText, musicStyleCount, musicStyleSaved, enHeader, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, lockScreenShown, lockScreenGone, versionShows271: versionText.includes('v2.7.1'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, dateText, catSwitchCount, statsChipCount, projectTabLabel, healthSeededCount, healthSeededNames, workCatEmpty, focusHiddenInHealth, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, projectGroupCount, perGroupAddCount, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, workEmojiCount, workEmojiHasBriefcase, healthEmojiCount, optgroupCount, workOptionCount, workStatusBtns, workStatusShown, healthPeriodInputs, healthValueInput, healthValueShown, healthChartArea, healthStatCards, settingsTabLabel, storageBarShown, storageText, musicStyleCount, musicStyleSaved, enHeader, enTabToday, langPanelBtn, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, lockScreenShown, lockScreenGone, versionShows272: versionText.includes('v2.7.2'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();
