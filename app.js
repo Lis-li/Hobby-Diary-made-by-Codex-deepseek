@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '2.2';
+const APP_VERSION = '2.3';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -18,6 +18,11 @@ const HEALTH_EMOJIS = ['⚖️', '🩸', '❤️'];
 const PROJECT_EMOJIS = { hobby: EMOJI_PRESETS, work: WORK_EMOJIS, health: HEALTH_EMOJIS };
 const CATEGORY_DEFAULT_EMOJI = { hobby: '🎯', work: '💼', health: '⚖️' };
 const HEALTH_METRIC_ICONS = { weight: '⚖️', bloodSugar: '🩸', bloodPressure: '❤️' };
+const HEALTH_TEMPLATES = [
+  { name: '体重', emoji: '⚖️', metric: 'weight', color: '#4CAF50' },
+  { name: '血糖', emoji: '🩸', metric: 'bloodSugar', color: '#EC407A' },
+  { name: '血压', emoji: '❤️', metric: 'bloodPressure', color: '#E5484D' }
+];
 const MOODS = [
   { v: 1, emoji: '😫', label: '很差' },
   { v: 2, emoji: '🙁', label: '不佳' },
@@ -32,6 +37,7 @@ const CATEGORIES = {
 };
 const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力' };
 const CHANGELOG = [
+  { v: 'v2.3', text: '健康分类直接内置体重、血糖、血压三个项目（首次使用自动出现，可自行删除）。' },
   { v: 'v2.2', text: '项目页三个分类改为可收缩横幅；健康指标（体重/血糖/血压）改为项目自带（提供三个模板），记录时不再强制选指标；记录弹窗只显示当前分类的项目，添加项目时分类跟随入口。' },
   { v: 'v2.1', text: '今日页健康分类取消专注计时；底部「爱好」改名「项目」；项目图标按分类区分（工作图标更丰富、健康仅体重/血糖/血压）；记录弹窗项目按分类分组显示。' },
   { v: 'v2.0', text: '版本号升级为 V2 系列；新增工作完成状态、健康数值记录（体重/血糖/血压）与健康趋势折线图。' },
@@ -1021,6 +1027,18 @@ async function migrateLegacyPhotos() {
   }
   if (changed) saveState();
 }
+function seedHealthProjects() {
+  if (localStorage.getItem('hobby-diary:health-seeded')) return;
+  localStorage.setItem('hobby-diary:health-seeded', '1');
+  const existing = new Set(state.hobbies.filter(h => (h.category || 'hobby') === 'health').map(h => h.name));
+  let changed = false;
+  for (const t of HEALTH_TEMPLATES) {
+    if (existing.has(t.name)) continue;
+    state.hobbies.push({ id: uid(), name: t.name, emoji: t.emoji, color: t.color, category: 'health', metric: t.metric, createdAt: Date.now() });
+    changed = true;
+  }
+  if (changed) saveState();
+}
 async function handlePhotoFiles(files) {
   const remaining = 9 - modalPhotos.length;
   if (remaining <= 0) { toast('最多添加 9 张照片'); return; }
@@ -1578,6 +1596,7 @@ async function init() {
   setTab(activeTab, false);
   if (focusSession && !hobbyById(focusSession.hobbyId)) clearFocusSession();
   try { await migrateLegacyPhotos(); } catch (err) { /* 迁移失败不阻塞使用 */ }
+  seedHealthProjects();
   setTimeout(() => {
     if (typeof MusicPlayer.isPending === 'function' && MusicPlayer.isPending()) {
       toast('🎵 点一下屏幕即可开启背景音乐');
