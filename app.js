@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '2.4';
+const APP_VERSION = '2.5';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -37,6 +37,7 @@ const CATEGORIES = {
 };
 const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力' };
 const CHANGELOG = [
+  { v: 'v2.5', text: '体重每天分早/中/晚三组、血糖分空腹/餐后2小时/睡前三组（可分批补录）；折线图同一天不连线、同时间段跨天连线，并补上坐标轴与单位；修正「爱好/项目」文案。' },
   { v: 'v2.4', text: '项目页去掉分类下的添加入口（顶部按钮记住上次分类）；统计页去掉「全部」只保留分类统计，健康统计隐藏专注时长；添加项目弹窗布局统一，健康不再单独排布。' },
   { v: 'v2.3', text: '健康分类直接内置体重、血糖、血压三个项目（首次使用自动出现，可自行删除）。' },
   { v: 'v2.2', text: '项目页三个分类改为可收缩横幅；健康指标（体重/血糖/血压）改为项目自带（提供三个模板），记录时不再强制选指标；记录弹窗只显示当前分类的项目，添加项目时分类跟随入口。' },
@@ -93,6 +94,18 @@ function moodInfo(v) { return MOODS.find(m => m.v === v) || null; }
 function metricLabel(m) { return m === 'weight' ? '体重' : m === 'bloodSugar' ? '血糖' : '血压'; }
 function metricUnit(m) { return m === 'weight' ? ' kg' : m === 'bloodSugar' ? ' mmol/L' : ' mmHg'; }
 function statusLabel(s) { return s === 'done' ? '✅ 完成' : s === 'doing' ? '🔄 进行中' : '⏳ 未完成'; }
+function periodLabels(metric) { return metric === 'bloodSugar' ? ['空腹', '餐后2小时', '睡前'] : ['早', '中', '晚']; }
+function fmtShortDate(d) { const p = parseDate(d); return `${p.getMonth() + 1}/${p.getDate()}`; }
+function healthValueText(r) {
+  if (r.metric === 'bloodPressure') return `${r.value}/${r.value2}${metricUnit('bloodPressure')}`;
+  if (r.metric === 'weight' || r.metric === 'bloodSugar') {
+    const labels = periodLabels(r.metric);
+    const parts = [];
+    [r.p1, r.p2, r.p3].forEach((v, i) => { if (v !== null && v !== undefined) parts.push(`${labels[i]} ${v}`); });
+    return parts.length ? parts.join(' · ') + metricUnit(r.metric) : '未填写';
+  }
+  return r.value !== null && r.value !== undefined ? `${r.value}${metricUnit(r.metric)}` : '';
+}
 function isImageUrl(s) { return typeof s === 'string' && s.startsWith('data:image'); }
 function iconText(h) {
   const v = h && h.emoji;
@@ -160,6 +173,9 @@ function normalizeRecord(r) {
     metric: (r.metric === 'weight' || r.metric === 'bloodSugar' || r.metric === 'bloodPressure') ? r.metric : null,
     value: (r.value !== null && r.value !== undefined && r.value !== '') ? Number(r.value) : null,
     value2: (r.value2 !== null && r.value2 !== undefined && r.value2 !== '') ? Number(r.value2) : null,
+    p1: (r.p1 !== null && r.p1 !== undefined && r.p1 !== '') ? Number(r.p1) : null,
+    p2: (r.p2 !== null && r.p2 !== undefined && r.p2 !== '') ? Number(r.p2) : null,
+    p3: (r.p3 !== null && r.p3 !== undefined && r.p3 !== '') ? Number(r.p3) : null,
     createdAt: r.createdAt || Date.now()
   };
 }
@@ -256,7 +272,7 @@ function recordRowHtml(r) {
   return `<div class="record-row" style="--hcolor:${h ? h.color : '#bbb'}">
     ${iconTag(h, 'rec-emoji')}
     <div class="rec-main">
-      <div class="rec-name">${h ? escapeHtml(h.name) : '未知爱好'}${r.minutes ? `<span class="rec-min">${r.minutes} 分钟</span>` : ''}${m ? `<span class="rec-mood">${m.emoji} ${m.label}</span>` : ''}${r.status ? `<span class="rec-mood">${statusLabel(r.status)}</span>` : ''}${r.metric ? `<span class="rec-mood">${metricLabel(r.metric)}：${r.metric === 'bloodPressure' ? `${r.value}/${r.value2}` : r.value}${metricUnit(r.metric)}</span>` : ''}</div>
+      <div class="rec-name">${h ? escapeHtml(h.name) : '未知项目'}${r.minutes ? `<span class="rec-min">${r.minutes} 分钟</span>` : ''}${m ? `<span class="rec-mood">${m.emoji} ${m.label}</span>` : ''}${r.status ? `<span class="rec-mood">${statusLabel(r.status)}</span>` : ''}${r.metric ? `<span class="rec-mood">${metricLabel(r.metric)}：${healthValueText(r)}</span>` : ''}</div>
       ${r.note ? `<div class="rec-note">${escapeHtml(r.note)}</div>` : ''}
       ${(r.photos && r.photos.length) ? `<div class="rec-photos">${r.photos.map((id, i) => `<img class="rec-photo" data-photo-id="${id}" alt="照片" data-action="view-photo" data-id="${r.id}" data-index="${i}" loading="lazy">`).join('')}</div>` : ''}
     </div>
@@ -369,7 +385,7 @@ function renderFocusCardHtml() {
     const h = hobbyById(focusSession.hobbyId);
     body = `
       <div class="focus-timer" id="focus-timer">${fmtFocusTime(focusElapsedMs(Date.now()))}</div>
-      <div class="focus-hobby">${h ? iconTag(h, 'focus-ico') + escapeHtml(h.name) : '未知爱好'}</div>
+      <div class="focus-hobby">${h ? iconTag(h, 'focus-ico') + escapeHtml(h.name) : '未知项目'}</div>
       <div class="focus-actions">
         <button class="btn-secondary" data-action="focus-pause">${focusSession.pausedAt ? '继续' : '暂停'}</button>
         <button class="btn-primary" data-action="focus-stop">结束</button>
@@ -381,7 +397,7 @@ function renderFocusCardHtml() {
   body = optsSource.length
       ? `<div class="focus-pick"><select id="focus-hobby">${opts}</select><button class="btn-primary" data-action="focus-start">开始专注</button></div>
          <div class="focus-hint">自由计时：结束时可一键把本次时长保存到今天的记录（时长不是必填，不想要直接放弃即可）。</div>`
-      : '<div class="empty-card small">先添加爱好，再开始专注计时</div>';
+      : '<div class="empty-card small">先添加项目，再开始专注计时</div>';
   }
   return `<div class="focus-card collapsible ${open ? 'open' : ''}" style="--hcolor:#FF8A65">
     ${head}
@@ -393,7 +409,7 @@ function openFocusSaveModal(hobbyId, minutes) {
   focusSaveMinutes = minutes;
   const h = hobbyById(hobbyId);
   openModal('保存专注时间', `
-    <div class="form-static">${h ? iconTag(h, 'form-ico') + escapeHtml(h.name) : '未知爱好'}</div>
+    <div class="form-static">${h ? iconTag(h, 'form-ico') + escapeHtml(h.name) : '未知项目'}</div>
     <p class="focus-save-text">本次专注了 <b>${minutes}</b> 分钟，要保存到今天的记录吗？</p>
     <div class="modal-actions">
       <button type="button" class="btn-secondary" data-action="focus-discard">放弃</button>
@@ -535,26 +551,50 @@ function renderHealthChartHtml() {
   const start = addDays(todayStr(), -29);
   const recs = state.records.filter(r => {
     const h = hobbyById(r.hobbyId);
-    return h && (h.category || 'hobby') === 'health' && r.metric === healthMetric && r.value != null && r.date >= start && r.date <= todayStr();
+    return h && (h.category || 'hobby') === 'health' && r.metric === healthMetric && r.date >= start && r.date <= todayStr();
   }).sort((a, b) => a.date < b.date ? -1 : 1);
-  if (recs.length < 2) {
+  const W = 320, H = 170, padL = 36, padR = 12, padT = 12, padB = 24;
+  const dayIndex = d => Math.round((parseDate(d) - parseDate(start)) / 86400000);
+  const x = d => padL + (dayIndex(d) / 29) * (W - padL - padR);
+  const y = v => H - padB - ((v - min) / (max - min)) * (H - padT - padB);
+  let series = [];
+  if (healthMetric === 'bloodPressure') {
+    series = [
+      { label: '收缩压', color: '#E5484D', pts: recs.filter(r => r.value != null).map(r => ({ date: r.date, v: r.value })) },
+      { label: '舒张压', color: '#5C6BC0', pts: recs.filter(r => r.value2 != null).map(r => ({ date: r.date, v: r.value2 })) }
+    ];
+  } else {
+    const labels = periodLabels(healthMetric);
+    const colors = ['#F59E0B', '#3B82F6', '#8B5CF6'];
+    series = [1, 2, 3].map(i => ({
+      label: labels[i - 1],
+      color: colors[i - 1],
+      pts: recs.filter(r => r['p' + i] != null).map(r => ({ date: r.date, v: r['p' + i] }))
+    }));
+  }
+  const allPts = series.flatMap(s => s.pts);
+  if (allPts.length < 2) {
     return `<div class="section-title">近30天${metricLabel(healthMetric)}趋势</div>${metricChips}<div class="empty-card small">数据点太少（至少 2 条），继续记录吧</div>`;
   }
-  const W = 320, H = 150, pad = 22;
-  const dayIndex = d => Math.round((parseDate(d) - parseDate(start)) / 86400000);
-  const vals = healthMetric === 'bloodPressure' ? recs.flatMap(r => [r.value, r.value2]) : recs.map(r => r.value);
+  const vals = allPts.map(p => p.v);
   let min = Math.min(...vals), max = Math.max(...vals);
   if (min === max) { min -= 1; max += 1; }
-  const x = d => pad + (dayIndex(d) / 29) * (W - pad * 2);
-  const y = v => H - pad - ((v - min) / (max - min)) * (H - pad * 2);
-  const series = healthMetric === 'bloodPressure'
-    ? [{ color: '#E5484D', pts: recs.map(r => [x(r.date), y(r.value)]) }, { color: '#5C6BC0', pts: recs.map(r => [x(r.date), y(r.value2)]) }]
-    : [{ color: '#4CAF50', pts: recs.map(r => [x(r.date), y(r.value)]) }];
-  const lines = series.map(s => `<polyline points="${s.pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${s.color}" stroke-width="2"/>`).join('');
-  const dots = series.map(s => s.pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="${s.color}"/>`).join('')).join('');
-  const legend = healthMetric === 'bloodPressure' ? '<div class="health-legend"><span style="color:#E5484D">● 收缩压</span><span style="color:#5C6BC0">● 舒张压</span></div>' : '';
-  return `<div class="section-title">近30天${metricLabel(healthMetric)}趋势</div>${metricChips}
-    <div class="health-chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="health-svg">${lines}${dots}</svg>${legend}</div>`;
+  const lines = series.map(s => {
+    const pts = s.pts.map(p => [x(p.date), y(p.v)]);
+    return pts.length > 1 ? `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${s.color}" stroke-width="2"/>` : '';
+  }).join('');
+  const dots = series.map(s => s.pts.map(p => `<circle cx="${x(p.date)}" cy="${y(p.v)}" r="3.4" fill="${s.color}"/>`).join('')).join('');
+  const unit = metricUnit(healthMetric).trim();
+  const axis = `
+    <line x1="${padL}" y1="${y(max)}" x2="${padL}" y2="${y(min)}" stroke="#ccc" stroke-width="1"/>
+    <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="#ccc" stroke-width="1"/>
+    <text x="${padL - 6}" y="${y(max) + 4}" text-anchor="end" class="axis-label">${max}${unit}</text>
+    <text x="${padL - 6}" y="${y(min) + 4}" text-anchor="end" class="axis-label">${min}${unit}</text>
+    <text x="${padL}" y="${H - 8}" class="axis-label">${fmtShortDate(start)}</text>
+    <text x="${W - padR}" y="${H - 8}" text-anchor="end" class="axis-label">${fmtShortDate(todayStr())}</text>`;
+  const legend = `<div class="health-legend">${series.map(s => `<span style="color:${s.color}">● ${s.label}</span>`).join('')}</div>`;
+  return `<div class="section-title">近30天${metricLabel(healthMetric)}趋势（${unit}）</div>${metricChips}
+    <div class="health-chart"><svg viewBox="0 0 ${W} ${H}" class="health-svg">${lines}${dots}${axis}</svg>${legend}</div>`;
 }
 
 function renderHobbies() {
@@ -645,11 +685,11 @@ function renderData() {
         <button class="btn-secondary ${theme === 'dark' ? 'on' : ''}" data-action="set-theme" data-theme="dark">🌙 深色</button>
       </div>`)}
     ${panelCard('danger', '🗑 清空全部数据', `
-      <p class="setting-desc">删除所有爱好和记录，且无法恢复。请先导出备份。</p>
+      <p class="setting-desc">删除所有项目和记录，且无法恢复。请先导出备份。</p>
       <button class="btn-danger" data-action="clear-data">清空全部数据</button>`, 'danger')}
     <div class="about">
       <div>Hobby Diary · 本地版 v${APP_VERSION}</div>
-      <div>当前数据约 ${sizeKb} KB（${state.hobbies.length} 个爱好、${state.records.length} 条记录、${photoCount} 张照片）</div>
+      <div>当前数据约 ${sizeKb} KB（${state.hobbies.length} 个项目、${state.records.length} 条记录、${photoCount} 张照片）</div>
       <div>照片存储在大容量本地数据库，不再占用网页存储空间。</div>
       <button class="link-btn" data-action="check-update">🔄 检查更新</button>
       <div>支持离线使用；发现新版本时顶部会提示一键更新。</div>
@@ -690,9 +730,9 @@ function openRecordModal(date, record, preferredHobbyId, categoryFilter) {
     return `<optgroup label="${CATEGORIES[key].emoji} ${CATEGORIES[key].name}">${list.map(h => `<option value="${h.id}" ${h.id === selectedHobbyId ? 'selected' : ''}>${iconText(h)} ${escapeHtml(h.name)}</option>`).join('')}</optgroup>`;
   }).join('');
   const hobbyField = state.hobbies.length === 0
-    ? '<p class="form-hint">请先到「爱好」页添加爱好。</p>'
+    ? '<p class="form-hint">请先到「项目」页添加项目。</p>'
     : (isNew
-        ? `<label>爱好<select name="hobbyId" required>${hobbyOpts}</select></label>`
+        ? `<label>项目<select name="hobbyId" required>${hobbyOpts}</select></label>`
         : `<input type="hidden" name="hobbyId" value="${record.hobbyId}"><div class="form-static">${targetHobby ? `${iconTag(targetHobby, 'form-ico')}${escapeHtml(targetHobby.name)}` : '未知爱好'}</div>`);
   openModal(isNew ? `为 ${fmtCnDate(date)} 添加记录` : '编辑记录', `
     <form id="record-form">
@@ -724,9 +764,11 @@ function openRecordModal(date, record, preferredHobbyId, categoryFilter) {
       const v1 = $('#health-value'), v2 = $('#health-value2');
       if (v1) v1.value = record.value || '';
       if (v2) v2.value = record.value2 || '';
-    } else {
-      const v1 = $('#health-value');
-      if (v1 && record.value != null) v1.value = record.value;
+    } else if (record.metric === 'weight' || record.metric === 'bloodSugar') {
+      [record.p1, record.p2, record.p3].forEach((v, i) => {
+        const inp = $('#health-p' + (i + 1));
+        if (inp && v !== null && v !== undefined) inp.value = v;
+      });
     }
   }
   renderPhotoGrid();
@@ -763,13 +805,19 @@ function renderRecordSpecialFields() {
       </div>`;
   } else if (cat === 'health') {
     const m = currentModalHobbyMetric() || 'weight';
-    const isBP = m === 'bloodPressure';
-    box.innerHTML = isBP
-      ? `<div class="bp-row">
+    if (m === 'bloodPressure') {
+      box.innerHTML = `<div class="bp-row">
           <label>收缩压（高压）<input type="number" id="health-value" step="any" placeholder="如 120"></label>
           <label>舒张压（低压）<input type="number" id="health-value2" step="any" placeholder="如 80"></label>
-        </div>`
-      : `<label>数值${m === 'weight' ? '（kg）' : '（mmol/L）'}<input type="number" id="health-value" step="any" placeholder="填写数值"></label>`;
+        </div>`;
+    } else {
+      const labels = periodLabels(m);
+      const unit = m === 'weight' ? 'kg' : 'mmol/L';
+      box.innerHTML = `<div class="period-picker">
+          ${[0, 1, 2].map(i => `<label>${labels[i]}（${unit}）<input type="number" id="health-p${i + 1}" step="any" placeholder="选填"></label>`).join('')}
+        </div>
+        <p class="form-hint">每天一条记录：三组可分批填写，之后随时编辑补齐。</p>`;
+    }
   } else {
     box.innerHTML = '';
   }
@@ -779,19 +827,27 @@ async function onRecordSubmit(e) {
   const fd = new FormData(e.target);
   const date = String(fd.get('date') || currentDate);
   const hobbyId = String(fd.get('hobbyId') || '');
-  if (!hobbyId && state.hobbies.length === 0) { toast('请先添加爱好'); return; }
+  if (!hobbyId && state.hobbies.length === 0) { toast('请先添加项目'); return; }
   const note = String(fd.get('note') || '').trim();
   const cat = hobbyById(hobbyId) ? (hobbyById(hobbyId).category || 'hobby') : 'hobby';
-  let status = null, metric = null, value = null, value2 = null;
+  let status = null, metric = null, value = null, value2 = null, p1 = null, p2 = null, p3 = null;
   if (cat === 'work') status = selectedWorkStatus;
   if (cat === 'health') {
     metric = currentModalHobbyMetric() || 'weight';
-    const v1 = $('#health-value') ? $('#health-value').value : '';
-    const v2 = $('#health-value2') ? $('#health-value2').value : '';
-    value = v1 !== '' ? Number(v1) : null;
-    value2 = v2 !== '' ? Number(v2) : null;
-    if (metric === 'bloodPressure' ? (value === null || value2 === null) : (value === null)) {
-      toast('请填写数值'); return;
+    if (metric === 'bloodPressure') {
+      const v1 = $('#health-value') ? $('#health-value').value : '';
+      const v2 = $('#health-value2') ? $('#health-value2').value : '';
+      value = v1 !== '' ? Number(v1) : null;
+      value2 = v2 !== '' ? Number(v2) : null;
+      if (value === null || value2 === null) { toast('请填写收缩压和舒张压'); return; }
+    } else {
+      const pv = [1, 2, 3].map(i => {
+        const el = $('#health-p' + i);
+        const s = el ? el.value : '';
+        return s !== '' ? Number(s) : null;
+      });
+      if (!pv.some(v => v !== null)) { toast('至少填写一组数值'); return; }
+      p1 = pv[0]; p2 = pv[1]; p3 = pv[2];
     }
   }
   const oldPhotos = [];
@@ -804,16 +860,34 @@ async function onRecordSubmit(e) {
       photos.push(await storePhotoDataUrl(item.dataUrl));
     }
   }
+  // 健康按天合并：同一天同一项目已有一条记录时，只补填本次填写的组
+  if (cat === 'health' && (metric === 'weight' || metric === 'bloodSugar') && !modalRecordId) {
+    const existing = recordFor(date, hobbyId);
+    if (existing) {
+      if (p1 !== null) existing.p1 = p1;
+      if (p2 !== null) existing.p2 = p2;
+      if (p3 !== null) existing.p3 = p3;
+      existing.metric = metric;
+      if (note && !existing.note) existing.note = note;
+      if (selectedMood !== null && existing.mood === null) existing.mood = selectedMood;
+      if (photos.length && (!existing.photos || !existing.photos.length)) existing.photos = photos;
+      saveState();
+      closeModal();
+      renderAll();
+      toast('已补录');
+      return;
+    }
+  }
   if (modalRecordId) {
     const r = state.records.find(x => x.id === modalRecordId);
     if (r) {
       oldPhotos.push(...(Array.isArray(r.photos) ? r.photos : []));
       r.date = date; r.hobbyId = hobbyId; r.mood = selectedMood; r.note = note; r.photos = photos;
-      r.status = status; r.metric = metric; r.value = value; r.value2 = value2;
+      r.status = status; r.metric = metric; r.value = value; r.value2 = value2; r.p1 = p1; r.p2 = p2; r.p3 = p3;
     }
     toast('已更新');
   } else {
-    state.records.push({ id: uid(), date, hobbyId, mood: selectedMood, note, photos, status, metric, value, value2, createdAt: Date.now() });
+    state.records.push({ id: uid(), date, hobbyId, mood: selectedMood, note, photos, status, metric, value, value2, p1, p2, p3, createdAt: Date.now() });
     toast('已记录 🎉');
   }
   // 清理编辑时被移除的旧照片
@@ -832,7 +906,7 @@ function openHobbyModal(hobby, presetCategory) {
   selectedIcon = hobby && hobby.emoji ? hobby.emoji : (CATEGORY_DEFAULT_EMOJI[selectedProjectCategory] || '🎯');
   const dots = COLOR_PRESETS.map(c => `<button type="button" class="color-dot ${selectedColor === c ? 'on' : ''}" data-color="${c}" style="background:${c}" title="${c}"></button>`).join('');
   const catBtns = Object.keys(CATEGORIES).map(key => `<button type="button" class="cat-pick-btn ${selectedProjectCategory === key ? 'on' : ''}" data-action="pick-project-category" data-category="${key}">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</button>`).join('');
-  openModal(hobby ? '编辑爱好' : '添加新爱好', `
+  openModal(hobby ? '编辑项目' : '添加新项目', `
     <form id="hobby-form">
       <input type="hidden" name="id" value="${hobby ? hobby.id : ''}">
       <label>分类</label>
@@ -895,7 +969,7 @@ function onHobbySubmit(e) {
     toast('已更新');
   } else {
     state.hobbies.push({ id: uid(), name, emoji, color, category, metric: category === 'health' ? 'weight' : null, createdAt: Date.now() });
-    toast('已添加爱好 🎨');
+    toast('已添加项目 🎨');
   }
   saveState();
   closeModal();
@@ -1110,7 +1184,7 @@ async function importData(input) {
     const text = await file.text();
     const data = JSON.parse(text);
     if (!data || !Array.isArray(data.hobbies) || !Array.isArray(data.records)) throw new Error('bad');
-    if (!confirm(`导入将覆盖当前全部数据（当前 ${state.hobbies.length} 个爱好、${state.records.length} 条记录）。是否继续？`)) return;
+    if (!confirm(`导入将覆盖当前全部数据（当前 ${state.hobbies.length} 个项目、${state.records.length} 条记录）。是否继续？`)) return;
     photoUrlCache.forEach(url => URL.revokeObjectURL(url));
     photoUrlCache.clear();
     const records = [];
@@ -1135,7 +1209,7 @@ async function importData(input) {
 }
 function clearData() {
   if (!confirm('确定清空全部数据吗？此操作无法撤销。')) return;
-  if (!confirm('再次确认：所有爱好和记录都会被删除。')) return;
+  if (!confirm('再次确认：所有项目和记录都会被删除。')) return;
   state = defaultState();
   saveState();
   renderAll();
@@ -1298,7 +1372,7 @@ function onAction(action, el) {
     }
     case 'focus-start': {
       const hobbyId = $('#focus-hobby') ? $('#focus-hobby').value : '';
-      if (!hobbyId || !hobbyById(hobbyId)) { toast('请先选择爱好'); return; }
+      if (!hobbyId || !hobbyById(hobbyId)) { toast('请先选择项目'); return; }
       focusSession = { hobbyId, startedAt: Date.now(), pausedAt: null, pausedTotalMs: 0, running: true };
       saveFocusSession();
       renderAll();
