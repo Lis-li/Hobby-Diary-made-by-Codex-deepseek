@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '2.7';
+const APP_VERSION = '2.7.1';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -37,6 +37,7 @@ const CATEGORIES = {
 };
 const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力', electronic: '电子', island: '海岛' };
 const CHANGELOG = [
+  { v: 'v2.7.1', text: '顶部布局去花朵更清爽；新增「迁移助手」与中英文双语界面（设置 → 外观 → 语言）。' },
   { v: 'v2.7', text: '应用改名为 TraceLife；背景音乐新增「电子」「海岛」两种风格（共 6 种），修复切换风格时旧声音残留的问题。' },
   { v: 'v2.6', text: '健康折线图的数据点支持悬停/点击查看具体数值。' },
   { v: 'v2.5', text: '体重每天分早/中/晚三组、血糖分空腹/餐后2小时/睡前三组（可分批补录）；折线图同一天不连线、同时间段跨天连线，并补上坐标轴与单位；修正「爱好/项目」文案。' },
@@ -87,24 +88,25 @@ function toDateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${p
 function parseDate(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
 function todayStr() { return toDateStr(new Date()); }
 function addDays(s, n) { const d = parseDate(s); d.setDate(d.getDate() + n); return toDateStr(d); }
-function weekLabel(s) { return '周' + WEEKDAYS[parseDate(s).getDay()]; }
-function fmtCnDate(s) { const d = parseDate(s); return `${d.getMonth() + 1}月${d.getDate()}日`; }
+function weekLabel(s) { return weekLabelLocal(s); }
+function fmtCnDate(s) { return fmtDateLocal(s); }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 function moodInfo(v) { return MOODS.find(m => m.v === v) || null; }
-function metricLabel(m) { return m === 'weight' ? '体重' : m === 'bloodSugar' ? '血糖' : '血压'; }
+function metricLabel(m) { return T(m === 'weight' ? '体重' : m === 'bloodSugar' ? '血糖' : '血压'); }
 function metricUnit(m) { return m === 'weight' ? ' kg' : m === 'bloodSugar' ? ' mmol/L' : ' mmHg'; }
-function statusLabel(s) { return s === 'done' ? '✅ 完成' : s === 'doing' ? '🔄 进行中' : '⏳ 未完成'; }
-function periodLabels(metric) { return metric === 'bloodSugar' ? ['空腹', '餐后2小时', '睡前'] : ['早', '中', '晚']; }
+function statusLabel(s) { return T(s === 'done' ? '完成' : s === 'doing' ? '进行中' : '未完成'); }
+function periodLabels(metric) { return (metric === 'bloodSugar' ? ['空腹', '餐后2小时', '睡前'] : ['早', '中', '晚']).map(T); }
 function fmtShortDate(d) { const p = parseDate(d); return `${p.getMonth() + 1}/${p.getDate()}`; }
+function localWeekdays() { return currentLang() === 'en' ? ['S', 'M', 'T', 'W', 'T', 'F', 'S'] : WEEKDAYS; }
 function healthValueText(r) {
   if (r.metric === 'bloodPressure') return `${r.value}/${r.value2}${metricUnit('bloodPressure')}`;
   if (r.metric === 'weight' || r.metric === 'bloodSugar') {
     const labels = periodLabels(r.metric);
     const parts = [];
     [r.p1, r.p2, r.p3].forEach((v, i) => { if (v !== null && v !== undefined) parts.push(`${labels[i]} ${v}`); });
-    return parts.length ? parts.join(' · ') + metricUnit(r.metric) : '未填写';
+    return parts.length ? parts.join(' · ') + metricUnit(r.metric) : T('未填写');
   }
   return r.value !== null && r.value !== undefined ? `${r.value}${metricUnit(r.metric)}` : '';
 }
@@ -251,9 +253,11 @@ function renderAll() {
 }
 function renderHeader() {
   const sub = $('#header-sub');
-  if (sub) sub.textContent = `🔥 连续 ${currentStreakFor(uniqueDays())} 天 · ${fmtCnDate(todayStr())} ${weekLabel(todayStr())} · 累计 ${state.records.length} 条记录`;
+  if (sub) sub.textContent = `🔥 ${T('连续')} ${currentStreakFor(uniqueDays())} ${T('天')} · ${fmtDateLocal(todayStr())} ${weekLabelLocal(todayStr())} · ${T('累计')} ${state.records.length} ${T('条记录')}`;
   const tag = $('#version-tag');
   if (tag) tag.textContent = 'v' + APP_VERSION;
+  const bannerText = $('#update-banner span');
+  if (bannerText) bannerText.textContent = T('✨ 发现新版本，点击重启应用');
 }
 
 function hobbyCardHtml(h, date) {
@@ -274,7 +278,7 @@ function recordRowHtml(r) {
   return `<div class="record-row" style="--hcolor:${h ? h.color : '#bbb'}">
     ${iconTag(h, 'rec-emoji')}
     <div class="rec-main">
-      <div class="rec-name">${h ? escapeHtml(h.name) : '未知项目'}${r.minutes ? `<span class="rec-min">${r.minutes} 分钟</span>` : ''}${m ? `<span class="rec-mood">${m.emoji} ${m.label}</span>` : ''}${r.status ? `<span class="rec-mood">${statusLabel(r.status)}</span>` : ''}${r.metric ? `<span class="rec-mood">${metricLabel(r.metric)}：${healthValueText(r)}</span>` : ''}</div>
+      <div class="rec-name">${h ? escapeHtml(h.name) : T('未知项目')}${r.minutes ? `<span class="rec-min">${r.minutes} ${T('分钟')}</span>` : ''}${m ? `<span class="rec-mood">${m.emoji} ${T(m.label)}</span>` : ''}${r.status ? `<span class="rec-mood">${statusLabel(r.status)}</span>` : ''}${r.metric ? `<span class="rec-mood">${metricLabel(r.metric)}：${healthValueText(r)}</span>` : ''}</div>
       ${r.note ? `<div class="rec-note">${escapeHtml(r.note)}</div>` : ''}
       ${(r.photos && r.photos.length) ? `<div class="rec-photos">${r.photos.map((id, i) => `<img class="rec-photo" data-photo-id="${id}" alt="照片" data-action="view-photo" data-id="${r.id}" data-index="${i}" loading="lazy">`).join('')}</div>` : ''}
     </div>
@@ -300,7 +304,7 @@ function renderToday() {
 
   const catSwitcher = `
     <div class="cat-switch">
-      ${Object.keys(CATEGORIES).map(key => `<button class="cat-btn ${todayCategory === key ? 'on' : ''}" data-action="set-today-category" data-category="${key}">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</button>`).join('')}
+      ${Object.keys(CATEGORIES).map(key => `<button class="cat-btn ${todayCategory === key ? 'on' : ''}" data-action="set-today-category" data-category="${key}">${CATEGORIES[key].emoji} ${T(CATEGORIES[key].name)}</button>`).join('')}
     </div>`;
 
   const nav = `
@@ -308,28 +312,28 @@ function renderToday() {
       <button class="icon-btn" data-action="shift-day" data-offset="-1" title="前一天">‹</button>
       <div class="date-chip${bumpDate ? ' bump' : ''}">
         <span class="date-chip-ico">🗓️</span>
-        <span class="date-text">${parseDate(currentDate).getFullYear()}年${fmtCnDate(currentDate)} ${weekLabel(currentDate)}</span>
+        <span class="date-text">${fmtFullDateLocal(currentDate)} ${weekLabelLocal(currentDate)}</span>
         <input type="date" class="date-input" value="${currentDate}" aria-label="选择日期">
       </div>
       <button class="icon-btn" data-action="shift-day" data-offset="1" title="后一天">›</button>
     </div>
-    ${isToday ? '' : '<div class="pill-row"><button class="pill" data-action="go-today">📌 回到今天</button></div>'}
+    ${isToday ? '' : `<div class="pill-row"><button class="pill" data-action="go-today">📌 ${T('回到今天')}</button></div>`}
     <div class="day-summary">
-      <span class="sum-item">🧩 <b>${recs.length}</b> 项</span>
-      <span class="sum-item">${moodEmoji ? `<b>${moodEmoji}</b> 心情` : '心情 --'}</span>
+      <span class="sum-item">🧩 <b>${recs.length}</b> ${T('项')}</span>
+      <span class="sum-item">${moodEmoji ? `<b>${moodEmoji}</b> ${T('心情')}` : `${T('心情')} --`}</span>
     </div>`;
 
   const grid = projects.length
-    ? `<div class="hobby-grid">${projects.map(h => hobbyCardHtml(h, currentDate)).join('')}<button class="hobby-card add-card" data-action="go-hobbies"><span class="add-plus">＋</span><span>添加${cat.name}项目</span></button></div>`
-    : `<div class="empty-card">还没有${cat.name}项目。<br>点击下方按钮添加吧～</div>`;
+    ? `<div class="hobby-grid">${projects.map(h => hobbyCardHtml(h, currentDate)).join('')}<button class="hobby-card add-card" data-action="go-hobbies"><span class="add-plus">＋</span><span>${T('添加新项目')}</span></button></div>`
+    : `<div class="empty-card">${T('项目')} —<br>${T('添加新项目')}</div>`;
 
   const list = recs.length
-    ? `<div class="section-title">当日${cat.name}记录（${recs.length}）</div><div class="record-list">${recs.map(recordRowHtml).join('')}</div>`
-    : `<div class="empty-card">今天还没有${cat.name}记录：点击上方的项目卡片即可开始记录，或添加一条记录。</div>`;
+    ? `<div class="section-title">${T('今日')} — ${T(cat.name)}（${recs.length}）</div><div class="record-list">${recs.map(recordRowHtml).join('')}</div>`
+    : `<div class="empty-card">${T('今日')} — ${T(cat.name)}：${T('添加记录')}</div>`;
 
   const focusHtml = todayCategory === 'health' ? '' : renderFocusCardHtml();
   el.innerHTML = catSwitcher + nav + focusHtml + grid + list +
-    `<div class="bottom-actions"><button class="btn-primary" data-action="add-record">＋ 添加记录</button><button class="btn-secondary" data-action="go-hobbies">管理项目</button></div>`;
+    `<div class="bottom-actions"><button class="btn-primary" data-action="add-record">＋ ${T('添加记录')}</button><button class="btn-secondary" data-action="go-hobbies">${T('管理项目')}</button></div>`;
 }
 
 /* ============ 专注计时（自由计时 v1） ============ */
@@ -378,8 +382,8 @@ function renderFocusCardHtml() {
   const active = focusSession && (focusSession.running || focusSession.pausedAt);
   const open = active || focusCardOpen;
   const head = `<button class="focus-head" data-action="toggle-focus-card">
-      <span class="focus-title">🎯 专注计时</span>
-      <span class="focus-today">今天已专注 <b>${todayMin}</b> 分钟</span>
+      <span class="focus-title">🎯 ${T('专注计时')}</span>
+      <span class="focus-today">${T('今天已专注')} <b>${todayMin}</b> ${T('分钟')}</span>
       <span class="setting-arrow">▾</span>
     </button>`;
   let body;
@@ -389,17 +393,17 @@ function renderFocusCardHtml() {
       <div class="focus-timer" id="focus-timer">${fmtFocusTime(focusElapsedMs(Date.now()))}</div>
       <div class="focus-hobby">${h ? iconTag(h, 'focus-ico') + escapeHtml(h.name) : '未知项目'}</div>
       <div class="focus-actions">
-        <button class="btn-secondary" data-action="focus-pause">${focusSession.pausedAt ? '继续' : '暂停'}</button>
-        <button class="btn-primary" data-action="focus-stop">结束</button>
+        <button class="btn-secondary" data-action="focus-pause">${focusSession.pausedAt ? T('继续') : T('暂停')}</button>
+        <button class="btn-primary" data-action="focus-stop">${T('结束')}</button>
       </div>`;
   } else {
   const catProjects = state.hobbies.filter(h => (h.category || 'hobby') === todayCategory);
   const optsSource = catProjects.length ? catProjects : state.hobbies;
   const opts = optsSource.map(h => `<option value="${h.id}">${iconText(h)} ${escapeHtml(h.name)}</option>`).join('');
   body = optsSource.length
-      ? `<div class="focus-pick"><select id="focus-hobby">${opts}</select><button class="btn-primary" data-action="focus-start">开始专注</button></div>
-         <div class="focus-hint">自由计时：结束时可一键把本次时长保存到今天的记录（时长不是必填，不想要直接放弃即可）。</div>`
-      : '<div class="empty-card small">先添加项目，再开始专注计时</div>';
+      ? `<div class="focus-pick"><select id="focus-hobby">${opts}</select><button class="btn-primary" data-action="focus-start">${T('开始专注')}</button></div>
+         <div class="focus-hint">${T('自由计时：结束时可一键把本次时长保存到今天的记录（时长不是必填，不想要直接放弃即可）。')}</div>`
+      : `<div class="empty-card small">${T('先添加项目，再开始专注计时')}</div>`;
   }
   return `<div class="focus-card collapsible ${open ? 'open' : ''}" style="--hcolor:#FF8A65">
     ${head}
@@ -410,12 +414,12 @@ function openFocusSaveModal(hobbyId, minutes) {
   focusSaveHobbyId = hobbyId;
   focusSaveMinutes = minutes;
   const h = hobbyById(hobbyId);
-  openModal('保存专注时间', `
-    <div class="form-static">${h ? iconTag(h, 'form-ico') + escapeHtml(h.name) : '未知项目'}</div>
-    <p class="focus-save-text">本次专注了 <b>${minutes}</b> 分钟，要保存到今天的记录吗？</p>
+  openModal(T('保存专注时间'), `
+    <div class="form-static">${h ? iconTag(h, 'form-ico') + escapeHtml(h.name) : T('未知项目')}</div>
+    <p class="focus-save-text">${T('本次专注了')} <b>${minutes}</b> ${T('分钟')}，${T('要保存到今天的记录吗？')}</p>
     <div class="modal-actions">
-      <button type="button" class="btn-secondary" data-action="focus-discard">放弃</button>
-      <button type="button" class="btn-primary" data-action="focus-confirm-save">保存</button>
+      <button type="button" class="btn-secondary" data-action="focus-discard">${T('放弃')}</button>
+      <button type="button" class="btn-primary" data-action="focus-confirm-save">${T('保存')}</button>
     </div>`);
 }
 function saveFocusMinutes(hobbyId, minutes) {
@@ -427,7 +431,7 @@ function saveFocusMinutes(hobbyId, minutes) {
     state.records.push({ id: uid(), date, hobbyId, minutes, mood: null, note: '', photos: [], createdAt: Date.now() });
   }
   saveState();
-  toast(`已保存 ${minutes} 分钟`);
+  toast(`${T('已保存 ')}${minutes}${T(' 分钟')}`);
 }
 
 function renderCalendar() {
@@ -455,26 +459,26 @@ function renderCalendar() {
   const selRecs = recordsOn(selectedCalendarDate);
   const groups = {};
   selRecs.forEach(r => { const h = hobbyById(r.hobbyId); const key = h ? (h.category || 'hobby') : 'hobby'; (groups[key] = groups[key] || []).push(r); });
-  const groupedHtml = Object.keys(groups).map(key => `<div class="cal-group"><div class="cal-group-title">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</div><div class="record-list">${groups[key].map(recordRowHtml).join('')}</div></div>`).join('');
+  const groupedHtml = Object.keys(groups).map(key => `<div class="cal-group"><div class="cal-group-title">${CATEGORIES[key].emoji} ${T(CATEGORIES[key].name)}</div><div class="record-list">${groups[key].map(recordRowHtml).join('')}</div></div>`).join('');
   const sd = parseDate(selectedCalendarDate);
   const detail = `
     <div class="cal-detail">
       <div class="cal-detail-head">
-        <div><b>${fmtCnDate(selectedCalendarDate)}</b><span class="week">${weekLabel(selectedCalendarDate)}${selectedCalendarDate === todayStr() ? ' · 今天' : ''}</span></div>
-        <button class="link-btn" data-action="go-to-date" data-date="${selectedCalendarDate}">去记录 ›</button>
+        <div><b>${fmtCnDate(selectedCalendarDate)}</b><span class="week">${weekLabel(selectedCalendarDate)}${selectedCalendarDate === todayStr() ? ` · ${T('今日')}` : ''}</span></div>
+        <button class="link-btn" data-action="go-to-date" data-date="${selectedCalendarDate}">${T('去记录')} ›</button>
       </div>
-      ${selRecs.length ? groupedHtml : '<div class="empty-card small">这一天还没有记录</div>'}
-      <div class="bottom-actions"><button class="btn-primary" data-action="add-record" data-date="${selectedCalendarDate}">＋ 添加记录</button></div>
+      ${selRecs.length ? groupedHtml : `<div class="empty-card small">${T('这一天还没有记录')}</div>`}
+      <div class="bottom-actions"><button class="btn-primary" data-action="add-record" data-date="${selectedCalendarDate}">＋ ${T('添加记录')}</button></div>
     </div>`;
 
   el.innerHTML = `
     <div class="cal-nav">
-      <button class="icon-btn" data-action="shift-month" data-offset="-1" title="上个月">‹</button>
-      <div class="cal-title">${y}年${m}月 <span class="cal-sub">打卡 ${ms.activeDays} 天</span></div>
-      <button class="icon-btn" data-action="shift-month" data-offset="1" title="下个月">›</button>
+      <button class="icon-btn" data-action="shift-month" data-offset="-1" title="${T('上个月')}">‹</button>
+      <div class="cal-title">${currentLang() === 'en' ? `${y}/${m}` : `${y}年${m}月`} <span class="cal-sub">${T('打卡')} ${ms.activeDays} ${T('天')}</span></div>
+      <button class="icon-btn" data-action="shift-month" data-offset="1" title="${T('下个月')}">›</button>
     </div>
-    ${calendarCursor !== todayStr().slice(0, 7) ? '<div class="pill-row"><button class="pill" data-action="go-current-month">📌 回到本月</button></div>' : ''}
-    <div class="cal-week">${WEEKDAYS.map(w => `<span>${w}</span>`).join('')}</div>
+    ${calendarCursor !== todayStr().slice(0, 7) ? `<div class="pill-row"><button class="pill" data-action="go-current-month">📌 ${T('回到本月')}</button></div>` : ''}
+    <div class="cal-week">${localWeekdays().map(w => `<span>${w}</span>`).join('')}</div>
     <div class="cal-grid">${cells}</div>
     ${detail}`;
   fillPhotoSrcs(el);
@@ -499,7 +503,7 @@ function renderStats() {
   const weekMin = filtered.filter(r => r.date >= weekStart && r.date <= todayStr()).reduce((s, r) => s + (r.minutes || 0), 0);
   const chips = `
     <div class="stat-chips">
-      ${Object.keys(CATEGORIES).map(key => `<button class="stat-chip ${statsCategory === key ? 'on' : ''}" data-action="stats-category" data-category="${key}">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</button>`).join('')}
+      ${Object.keys(CATEGORIES).map(key => `<button class="stat-chip ${statsCategory === key ? 'on' : ''}" data-action="stats-category" data-category="${key}">${CATEGORIES[key].emoji} ${T(CATEGORIES[key].name)}</button>`).join('')}
     </div>`;
   const healthChart = statsCategory === 'health' ? renderHealthChartHtml() : '';
 
@@ -522,26 +526,26 @@ function renderStats() {
         ${iconTag(h, 'rank-emoji')}
         <div class="rank-main">
           <div class="rank-name">${escapeHtml(h.name)}</div>
-          <div class="rank-sub">当前连续 ${s.current} 天 · 最长连续 ${s.longest} 天</div>
+          <div class="rank-sub">${T('当前连续')} ${s.current} ${T('天')} · ${T('最长连续')} ${s.longest} ${T('天')}</div>
         </div>
-        <div class="rank-nums"><b>${s.count}</b> 次<br><span class="rank-min">${s.minutes} 分钟</span></div>
+        <div class="rank-nums"><b>${s.count}</b> ${T('次')}<br><span class="rank-min">${s.minutes} ${T('分钟')}</span></div>
       </div>`).join('')
-    : '<div class="empty-card">这个分类还没有数据，去今日页开始记录吧。</div>';
+    : `<div class="empty-card">${T('这个分类还没有数据，去今日页开始记录吧。')}</div>`;
 
   const showFocusCards = statsCategory !== 'health';
   el.innerHTML = chips + `
     <div class="stat-cards">
-      <div class="stat-card"><b>${msActive}</b><span>本月记录天数</span></div>
-      <div class="stat-card"><b>${total}</b><span>累计记录</span></div>
-      <div class="stat-card"><b>${cur}</b><span>当前连续</span></div>
-      <div class="stat-card"><b>${longest}</b><span>最长连续</span></div>
-      ${showFocusCards ? `<div class="stat-card"><b>${todayMin}</b><span>今日专注（分钟）</span></div>
-      <div class="stat-card"><b>${weekMin}</b><span>近7天专注（分钟）</span></div>` : ''}
+      <div class="stat-card"><b>${msActive}</b><span>${T('本月记录天数')}</span></div>
+      <div class="stat-card"><b>${total}</b><span>${T('累计记录')}</span></div>
+      <div class="stat-card"><b>${cur}</b><span>${T('当前连续')}</span></div>
+      <div class="stat-card"><b>${longest}</b><span>${T('最长连续')}</span></div>
+      ${showFocusCards ? `<div class="stat-card"><b>${todayMin}</b><span>${T('今日专注（分钟）')}</span></div>
+      <div class="stat-card"><b>${weekMin}</b><span>${T('近7天专注（分钟）')}</span></div>` : ''}
     </div>
-    <div class="section-title">最近 14 天</div>
+    <div class="section-title">${T('最近 14 天')}</div>
     <div class="chart">${bars}</div>
     ${healthChart}
-    <div class="section-title">项目排行</div>
+    <div class="section-title">${T('项目排行')}</div>
     <div class="rank-list">${rows}</div>`;
 }
 
@@ -562,8 +566,8 @@ function renderHealthChartHtml() {
   let series = [];
   if (healthMetric === 'bloodPressure') {
     series = [
-      { label: '收缩压', color: '#E5484D', pts: recs.filter(r => r.value != null).map(r => ({ date: r.date, v: r.value })) },
-      { label: '舒张压', color: '#5C6BC0', pts: recs.filter(r => r.value2 != null).map(r => ({ date: r.date, v: r.value2 })) }
+      { label: T('收缩压'), color: '#E5484D', pts: recs.filter(r => r.value != null).map(r => ({ date: r.date, v: r.value })) },
+      { label: T('舒张压'), color: '#5C6BC0', pts: recs.filter(r => r.value2 != null).map(r => ({ date: r.date, v: r.value2 })) }
     ];
   } else {
     const labels = periodLabels(healthMetric);
@@ -576,7 +580,7 @@ function renderHealthChartHtml() {
   }
   const allPts = series.flatMap(s => s.pts);
   if (allPts.length < 2) {
-    return `<div class="section-title">近30天${metricLabel(healthMetric)}趋势</div>${metricChips}<div class="empty-card small">数据点太少（至少 2 条），继续记录吧</div>`;
+    return `<div class="section-title">${T('近30天')}${metricLabel(healthMetric)}${T('趋势')}</div>${metricChips}<div class="empty-card small">${T('数据点太少（至少 2 条），继续记录吧')}</div>`;
   }
   const vals = allPts.map(p => p.v);
   let min = Math.min(...vals), max = Math.max(...vals);
@@ -598,7 +602,7 @@ function renderHealthChartHtml() {
     <text x="${padL}" y="${H - 8}" class="axis-label">${fmtShortDate(start)}</text>
     <text x="${W - padR}" y="${H - 8}" text-anchor="end" class="axis-label">${fmtShortDate(todayStr())}</text>`;
   const legend = `<div class="health-legend">${series.map(s => `<span style="color:${s.color}">● ${s.label}</span>`).join('')}</div>`;
-  return `<div class="section-title">近30天${metricLabel(healthMetric)}趋势（${unit}）</div>${metricChips}
+  return `<div class="section-title">${T('近30天')}${metricLabel(healthMetric)}${T('趋势')}（${unit}）</div>${metricChips}
     <div class="health-chart"><svg viewBox="0 0 ${W} ${H}" class="health-svg">${lines}${dots}${axis}</svg>${legend}</div>`;
 }
 
@@ -613,7 +617,7 @@ function renderHobbies() {
         ${iconTag(h, 'hobby-emoji')}
         <div class="hobby-info">
           <div class="hobby-name">${escapeHtml(h.name)}</div>
-          <div class="hobby-stats">${s.count} 次 · ${s.minutes} 分钟 · 连续 ${s.current} 天</div>
+          <div class="hobby-stats">${s.count} ${T('次')} · ${s.minutes} ${T('分钟')} · ${T('连续')} ${s.current} ${T('天')}</div>
         </div>
         <div class="hobby-actions">
           <button data-action="edit-hobby" data-id="${h.id}" title="编辑">✎</button>
@@ -624,17 +628,17 @@ function renderHobbies() {
     const open = !!projectGroupsOpen[key];
     return `<div class="project-group collapsible ${open ? 'open' : ''}">
       <button class="setting-head project-banner" data-action="toggle-project-group" data-group="${key}">
-        <span class="setting-title">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}（${items.length}）</span>
+        <span class="setting-title">${CATEGORIES[key].emoji} ${T(CATEGORIES[key].name)}（${items.length}）</span>
         <span class="setting-arrow">▾</span>
       </button>
-      <div class="setting-body">${items.length ? `<div class="hobby-list">${itemHtml}</div>` : '<div class="empty-card small">还没有项目</div>'}</div>
+      <div class="setting-body">${items.length ? `<div class="hobby-list">${itemHtml}</div>` : `<div class="empty-card small">${T('还没有项目')}</div>`}</div>
     </div>`;
   }).join('');
   el.innerHTML = `
-    <div class="page-head"><h2>我的项目</h2><span class="page-sub">共 ${state.hobbies.length} 个</span></div>
-    <button class="btn-primary" data-action="add-hobby">＋ 添加新项目</button>
+    <div class="page-head"><h2>${T('我的项目')}</h2><span class="page-sub">${T('共')} ${state.hobbies.length} ${T('个')}</span></div>
+    <button class="btn-primary" data-action="add-hobby">＋ ${T('添加新项目')}</button>
     ${sections}
-    <div class="tip-card">💡 点横幅可展开/收起；在「今日」页点项目卡片即可开始记录。</div>`;
+    <div class="tip-card">💡 ${T('点横幅可展开/收起；在「今日」页点项目卡片即可开始记录。')}</div>`;
 }
 
 function panelCard(key, title, bodyHtml, extraClass) {
@@ -652,52 +656,65 @@ function renderData() {
   if (!el) return;
   const sizeKb = (JSON.stringify(state).length / 1024).toFixed(1);
   const theme = localStorage.getItem(THEME_KEY) || 'light';
+  const lang = currentLang();
   const photoCount = state.records.reduce((s, r) => s + (Array.isArray(r.photos) ? r.photos.length : 0), 0);
   el.innerHTML = `
-    <div class="page-head"><h2>设置</h2></div>
-    ${panelCard('backup', '💾 数据备份', `
-      <p class="setting-desc">数据保存在当前浏览器的本地存储中，建议定期导出备份；换设备或换浏览器时再导入即可恢复。</p>
+    <div class="page-head"><h2>${T('设置')}</h2></div>
+    ${panelCard('backup', '💾 ' + T('数据备份'), `
+      <p class="setting-desc">${T('数据保存在当前浏览器的本地存储中，建议定期导出备份；换设备或换浏览器时再导入即可恢复。')}</p>
       <div class="btn-row">
-        <button class="btn-secondary" data-action="export-data">⬇ 导出 JSON</button>
-        <label class="btn-secondary">⬆ 导入 JSON<input type="file" id="import-file" accept=".json,application/json" hidden></label>
-      </div>`)}
-    ${panelCard('changelog', '📜 更新说明', `
-      <p class="setting-desc">每次更新加了什么、修了什么，都记在这里。</p>
-      <button class="btn-secondary" data-action="open-changelog">查看更新说明</button>`)}
-    ${panelCard('storage', '📦 存储空间', `
-      <div class="storage-bar"><div class="storage-bar-fill" id="storage-bar-fill" style="width:0%"></div></div>
-      <div class="storage-text" id="storage-text">计算中…</div>`)}
-    ${panelCard('lock', '🔒 应用锁', `
-      <p class="setting-desc">设置后，打开应用需要输入密码才能查看，防止别人看到你的记录和照片（密码只保存在本机，不会上传）。</p>
-      <label>新密码<input type="password" id="lock-new" placeholder="至少 4 位" autocomplete="off"></label>
-      <label>再次输入<input type="password" id="lock-confirm" placeholder="再输一次" autocomplete="off"></label>
-      <div class="btn-row">
-        <button class="btn-secondary" data-action="lock-save">保存密码</button>
-        ${localStorage.getItem(LOCK_KEY) ? '<button class="btn-secondary" data-action="lock-disable">关闭应用锁</button>' : ''}
+        <button class="btn-secondary" data-action="export-data">⬇ ${T('导出 JSON')}</button>
+        <label class="btn-secondary">⬆ ${T('导入 JSON')}<input type="file" id="import-file" accept=".json,application/json" hidden></label>
       </div>
-      ${localStorage.getItem(LOCK_KEY) ? '<label>当前密码（关闭时需要）<input type="password" id="lock-current" placeholder="输入当前密码" autocomplete="off"></label>' : ''}`)}
-    ${panelCard('music', '🎵 背景音乐', `
-      <p class="setting-desc">选择喜欢的纯音乐风格；顶部 🎵 按钮可随时静音。</p>
+      <div class="migrate-box">
+        <div class="migrate-title">${T('迁移助手')}</div>
+        <p class="setting-desc">${T('换新地址/新版本后，按下面两步把旧数据搬过来：')}</p>
+        <div class="migrate-step">1. ${T('在旧版 App 打开「设置 → 数据备份 → 导出 JSON」')}</div>
+        <div class="migrate-step">2. ${T('回到本页点「导入 JSON」，选择刚才导出的文件')}</div>
+      </div>`)}
+    ${panelCard('changelog', '📜 ' + T('更新说明'), `
+      <p class="setting-desc">${T('每次更新加了什么、修了什么，都记在这里。')}</p>
+      <button class="btn-secondary" data-action="open-changelog">${T('查看更新说明')}</button>`)}
+    ${panelCard('storage', '📦 ' + T('存储空间'), `
+      <div class="storage-bar"><div class="storage-bar-fill" id="storage-bar-fill" style="width:0%"></div></div>
+      <div class="storage-text" id="storage-text">${T('计算中…')}</div>`)}
+    ${panelCard('lock', '🔒 ' + T('应用锁'), `
+      <p class="setting-desc">${T('设置后，打开应用需要输入密码才能查看，防止别人看到你的记录和照片（密码只保存在本机，不会上传）。')}</p>
+      <label>${T('新密码')}<input type="password" id="lock-new" placeholder="${lang === 'en' ? 'At least 4 characters' : '至少 4 位'}" autocomplete="off"></label>
+      <label>${T('再次输入')}<input type="password" id="lock-confirm" placeholder="${lang === 'en' ? 'Type again' : '再输一次'}" autocomplete="off"></label>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="lock-save">${T('保存密码')}</button>
+        ${localStorage.getItem(LOCK_KEY) ? `<button class="btn-secondary" data-action="lock-disable">${T('关闭应用锁')}</button>` : ''}
+      </div>
+      ${localStorage.getItem(LOCK_KEY) ? `<label>${T('当前密码（关闭时需要）')}<input type="password" id="lock-current" placeholder="${lang === 'en' ? 'Enter current password' : '输入当前密码'}" autocomplete="off"></label>` : ''}`)}
+    ${panelCard('music', '🎵 ' + T('背景音乐'), `
+      <p class="setting-desc">${T('选择喜欢的纯音乐风格；顶部 🎵 按钮可随时静音。')}</p>
       <div class="music-styles">
         ${Object.keys(MUSIC_STYLE_LABELS).map(name => {
           const cur = localStorage.getItem('hobby-diary:music-style') || 'calm';
-          return `<button class="music-style-btn ${cur === name ? 'on' : ''}" data-action="music-style" data-style="${name}">${MUSIC_STYLE_LABELS[name]}</button>`;
+          return `<button class="music-style-btn ${cur === name ? 'on' : ''}" data-action="music-style" data-style="${name}">${T(MUSIC_STYLE_LABELS[name])}</button>`;
         }).join('')}
       </div>`)}
-    ${panelCard('theme', '🕶 外观', `
+    ${panelCard('theme', '🕶 ' + T('外观'), `
+      <label>${T('语言')}</label>
       <div class="btn-row">
-        <button class="btn-secondary ${theme === 'light' ? 'on' : ''}" data-action="set-theme" data-theme="light">☀️ 浅色</button>
-        <button class="btn-secondary ${theme === 'dark' ? 'on' : ''}" data-action="set-theme" data-theme="dark">🌙 深色</button>
+        <button class="btn-secondary ${lang === 'zh' ? 'on' : ''}" data-action="set-lang" data-lang="zh">中文</button>
+        <button class="btn-secondary ${lang === 'en' ? 'on' : ''}" data-action="set-lang" data-lang="en">English</button>
+      </div>
+      <label>${T('外观')}</label>
+      <div class="btn-row">
+        <button class="btn-secondary ${theme === 'light' ? 'on' : ''}" data-action="set-theme" data-theme="light">☀️ ${T('浅色')}</button>
+        <button class="btn-secondary ${theme === 'dark' ? 'on' : ''}" data-action="set-theme" data-theme="dark">🌙 ${T('深色')}</button>
       </div>`)}
-    ${panelCard('danger', '🗑 清空全部数据', `
-      <p class="setting-desc">删除所有项目和记录，且无法恢复。请先导出备份。</p>
-      <button class="btn-danger" data-action="clear-data">清空全部数据</button>`, 'danger')}
+    ${panelCard('danger', '🗑 ' + T('清空全部数据'), `
+      <p class="setting-desc">${T('删除所有项目和记录，且无法恢复。请先导出备份。')}</p>
+      <button class="btn-danger" data-action="clear-data">${T('清空全部数据')}</button>`, 'danger')}
     <div class="about">
       <div>TraceLife · 本地版 v${APP_VERSION}</div>
-      <div>当前数据约 ${sizeKb} KB（${state.hobbies.length} 个项目、${state.records.length} 条记录、${photoCount} 张照片）</div>
-      <div>照片存储在大容量本地数据库，不再占用网页存储空间。</div>
-      <button class="link-btn" data-action="check-update">🔄 检查更新</button>
-      <div>支持离线使用；发现新版本时顶部会提示一键更新。</div>
+      <div>${lang === 'en' ? `Data ~ ${sizeKb} KB (${state.hobbies.length} projects, ${state.records.length} records, ${photoCount} photos)` : `当前数据约 ${sizeKb} KB（${state.hobbies.length} 个项目、${state.records.length} 条记录、${photoCount} 张照片）`}</div>
+      <div>${T('照片存储在大容量本地数据库，不再占用网页存储空间。')}</div>
+      <button class="link-btn" data-action="check-update">🔄 ${T('检查更新')}</button>
+      <div>${T('支持离线使用；发现新版本时顶部会提示一键更新。')}</div>
     </div>`;
   updateStorageInfo();
 }
@@ -743,7 +760,7 @@ function openRecordModal(date, record, preferredHobbyId, categoryFilter) {
   modalPhotos = record && Array.isArray(record.photos) ? record.photos.map(id => ({ id })) : [];
   const isNew = !record;
   const targetHobby = record ? hobbyById(record.hobbyId) : null;
-  const moodBtns = MOODS.map(m => `<button type="button" class="mood-btn ${selectedMood === m.v ? 'on' : ''}" data-mood="${m.v}" title="${m.label}">${m.emoji}</button>`).join('');
+  const moodBtns = MOODS.map(m => `<button type="button" class="mood-btn ${selectedMood === m.v ? 'on' : ''}" data-mood="${m.v}" title="${T(m.label)}">${m.emoji}</button>`).join('');
   const catProjects = categoryFilter ? state.hobbies.filter(h => (h.category || 'hobby') === categoryFilter) : state.hobbies;
   const groups = {};
   catProjects.forEach(h => { const key = h.category || 'hobby'; (groups[key] = groups[key] || []).push(h); });
@@ -756,24 +773,24 @@ function openRecordModal(date, record, preferredHobbyId, categoryFilter) {
   const hobbyField = state.hobbies.length === 0
     ? '<p class="form-hint">请先到「项目」页添加项目。</p>'
     : (isNew
-        ? `<label>项目<select name="hobbyId" required>${hobbyOpts}</select></label>`
+        ? `<label>${T('项目')}<select name="hobbyId" required>${hobbyOpts}</select></label>`
         : `<input type="hidden" name="hobbyId" value="${record.hobbyId}"><div class="form-static">${targetHobby ? `${iconTag(targetHobby, 'form-ico')}${escapeHtml(targetHobby.name)}` : '未知爱好'}</div>`);
-  openModal(isNew ? `为 ${fmtCnDate(date)} 添加记录` : '编辑记录', `
+  openModal(isNew ? `${T('为 ')}${fmtCnDate(date)}${T(' 添加记录')}` : T('编辑记录'), `
     <form id="record-form">
       <input type="hidden" name="date" value="${escapeHtml(date)}">
       ${hobbyField}
       <div id="record-special"></div>
-      <label>心情（可选）</label>
+      <label>${T('心情（可选）')}</label>
       <div class="mood-picker" id="mood-picker">${moodBtns}</div>
-      <label>备注（可选）<textarea name="note" rows="2" maxlength="500" placeholder="今天有什么特别想说的…">${record ? escapeHtml(record.note) : ''}</textarea></label>
-      <label>照片（最多 9 张，可选）</label>
+      <label>${T('备注（可选）')}<textarea name="note" rows="2" maxlength="500" placeholder="${T('备注（可选）')}">${record ? escapeHtml(record.note) : ''}</textarea></label>
+      <label>${T('照片（最多 9 张，可选）')}</label>
       <div class="photo-grid" id="photo-grid"></div>
-      <label class="btn-secondary photo-add" for="photo-input">＋ 添加照片</label>
+      <label class="btn-secondary photo-add" for="photo-input">${T('＋ 添加照片')}</label>
       <input type="file" id="photo-input" accept="image/*" multiple hidden>
-      <p class="form-hint">照片会压缩后保存在本机浏览器中。</p>
+      <p class="form-hint">${T('照片会压缩后保存在本机浏览器中。')}</p>
       <div class="modal-actions">
-        <button type="button" class="btn-secondary" data-action="close-modal">取消</button>
-        <button type="submit" class="btn-primary">保存</button>
+        <button type="button" class="btn-secondary" data-action="close-modal">${T('取消')}</button>
+        <button type="submit" class="btn-primary">${T('保存')}</button>
       </div>
     </form>`);
   $$('#mood-picker .mood-btn').forEach(b => b.addEventListener('click', () => {
@@ -821,7 +838,7 @@ function renderRecordSpecialFields() {
   if (!box) return;
   const cat = currentModalHobbyCategory();
   if (cat === 'work') {
-    box.innerHTML = `<label>完成状态</label>
+    box.innerHTML = `<label>${T('完成状态')}</label>
       <div class="status-picker">
         <button type="button" class="status-btn ${selectedWorkStatus === 'done' ? 'on' : ''}" data-action="pick-work-status" data-status="done">✅ 完成</button>
         <button type="button" class="status-btn ${selectedWorkStatus === 'doing' ? 'on' : ''}" data-action="pick-work-status" data-status="doing">🔄 进行中</button>
@@ -831,8 +848,8 @@ function renderRecordSpecialFields() {
     const m = currentModalHobbyMetric() || 'weight';
     if (m === 'bloodPressure') {
       box.innerHTML = `<div class="bp-row">
-          <label>收缩压（高压）<input type="number" id="health-value" step="any" placeholder="如 120"></label>
-          <label>舒张压（低压）<input type="number" id="health-value2" step="any" placeholder="如 80"></label>
+          <label>${T('收缩压（高压）')}<input type="number" id="health-value" step="any" placeholder="${currentLang() === 'en' ? 'e.g. 120' : '如 120'}"></label>
+          <label>${T('舒张压（低压）')}<input type="number" id="health-value2" step="any" placeholder="${currentLang() === 'en' ? 'e.g. 80' : '如 80'}"></label>
         </div>`;
     } else {
       const labels = periodLabels(m);
@@ -840,7 +857,7 @@ function renderRecordSpecialFields() {
       box.innerHTML = `<div class="period-picker">
           ${[0, 1, 2].map(i => `<label>${labels[i]}（${unit}）<input type="number" id="health-p${i + 1}" step="any" placeholder="选填"></label>`).join('')}
         </div>
-        <p class="form-hint">每天一条记录：三组可分批填写，之后随时编辑补齐。</p>`;
+        <p class="form-hint">${T('每天一条记录：三组可分批填写，之后随时编辑补齐。')}</p>`;
     }
   } else {
     box.innerHTML = '';
@@ -851,7 +868,7 @@ async function onRecordSubmit(e) {
   const fd = new FormData(e.target);
   const date = String(fd.get('date') || currentDate);
   const hobbyId = String(fd.get('hobbyId') || '');
-  if (!hobbyId && state.hobbies.length === 0) { toast('请先添加项目'); return; }
+  if (!hobbyId && state.hobbies.length === 0) { toast(T('请先添加项目')); return; }
   const note = String(fd.get('note') || '').trim();
   const cat = hobbyById(hobbyId) ? (hobbyById(hobbyId).category || 'hobby') : 'hobby';
   let status = null, metric = null, value = null, value2 = null, p1 = null, p2 = null, p3 = null;
@@ -863,14 +880,14 @@ async function onRecordSubmit(e) {
       const v2 = $('#health-value2') ? $('#health-value2').value : '';
       value = v1 !== '' ? Number(v1) : null;
       value2 = v2 !== '' ? Number(v2) : null;
-      if (value === null || value2 === null) { toast('请填写收缩压和舒张压'); return; }
+      if (value === null || value2 === null) { toast(T('请填写收缩压和舒张压')); return; }
     } else {
       const pv = [1, 2, 3].map(i => {
         const el = $('#health-p' + i);
         const s = el ? el.value : '';
         return s !== '' ? Number(s) : null;
       });
-      if (!pv.some(v => v !== null)) { toast('至少填写一组数值'); return; }
+      if (!pv.some(v => v !== null)) { toast(T('至少填写一组数值')); return; }
       p1 = pv[0]; p2 = pv[1]; p3 = pv[2];
     }
   }
@@ -898,7 +915,7 @@ async function onRecordSubmit(e) {
       saveState();
       closeModal();
       renderAll();
-      toast('已补录');
+      toast(T('已补录'));
       return;
     }
   }
@@ -909,10 +926,10 @@ async function onRecordSubmit(e) {
       r.date = date; r.hobbyId = hobbyId; r.mood = selectedMood; r.note = note; r.photos = photos;
       r.status = status; r.metric = metric; r.value = value; r.value2 = value2; r.p1 = p1; r.p2 = p2; r.p3 = p3;
     }
-    toast('已更新');
+    toast(T('已更新'));
   } else {
     state.records.push({ id: uid(), date, hobbyId, mood: selectedMood, note, photos, status, metric, value, value2, p1, p2, p3, createdAt: Date.now() });
-    toast('已记录 🎉');
+    toast(T('已记录 🎉'));
   }
   // 清理编辑时被移除的旧照片
   const removed = oldPhotos.filter((id, i) => oldPhotos.indexOf(id) === i && !photos.includes(id));
@@ -930,22 +947,22 @@ function openHobbyModal(hobby, presetCategory) {
   selectedIcon = hobby && hobby.emoji ? hobby.emoji : (CATEGORY_DEFAULT_EMOJI[selectedProjectCategory] || '🎯');
   const dots = COLOR_PRESETS.map(c => `<button type="button" class="color-dot ${selectedColor === c ? 'on' : ''}" data-color="${c}" style="background:${c}" title="${c}"></button>`).join('');
   const catBtns = Object.keys(CATEGORIES).map(key => `<button type="button" class="cat-pick-btn ${selectedProjectCategory === key ? 'on' : ''}" data-action="pick-project-category" data-category="${key}">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</button>`).join('');
-  openModal(hobby ? '编辑项目' : '添加新项目', `
+  openModal(hobby ? T('编辑爱好') : T('添加新爱好'), `
     <form id="hobby-form">
       <input type="hidden" name="id" value="${hobby ? hobby.id : ''}">
-      <label>分类</label>
+      <label>${T('分类')}</label>
       <div class="cat-pick">${catBtns}</div>
-      <label>图标</label>
+      <label>${T('图标')}</label>
       <div class="icon-preview" id="hobby-icon-preview"></div>
       <div class="emoji-grid" id="hobby-emoji-grid"></div>
       <label class="btn-secondary photo-add" for="hobby-icon-input">🖼 上传图片作图标</label>
       <input type="file" id="hobby-icon-input" accept="image/*" hidden>
-      <label>名称<input name="name" required maxlength="20" value="${hobby ? escapeHtml(hobby.name) : ''}" placeholder="例如：画画"></label>
-      <label>颜色</label>
+      <label>${T('名称')}<input name="name" required maxlength="20" value="${hobby ? escapeHtml(hobby.name) : ''}" placeholder="${currentLang() === 'en' ? 'e.g. Painting' : '例如：画画'}"></label>
+      <label>${T('颜色')}</label>
       <div class="color-picker">${dots}</div>
       <div class="modal-actions">
-        <button type="button" class="btn-secondary" data-action="close-modal">取消</button>
-        <button type="submit" class="btn-primary">保存</button>
+        <button type="button" class="btn-secondary" data-action="close-modal">${T('取消')}</button>
+        <button type="submit" class="btn-primary">${T('保存')}</button>
       </div>
     </form>`);
   renderIconPreview();
@@ -982,7 +999,7 @@ function onHobbySubmit(e) {
   const fd = new FormData(e.target);
   const id = String(fd.get('id') || '');
   const name = String(fd.get('name') || '').trim();
-  if (!name) { toast('请输入名称'); return; }
+  if (!name) { toast(T('请输入名称')); return; }
   const emoji = selectedIcon || '🎯';
   const color = selectedColor || COLOR_PRESETS[0];
   const category = selectedProjectCategory || 'hobby';
@@ -990,10 +1007,10 @@ function onHobbySubmit(e) {
   if (id) {
     const h = hobbyById(id);
     if (h) { h.name = name; h.emoji = emoji; h.color = color; h.category = category; h.metric = category === 'health' ? (h.metric || 'weight') : null; }
-    toast('已更新');
+    toast(T('已更新'));
   } else {
     state.hobbies.push({ id: uid(), name, emoji, color, category, metric: category === 'health' ? 'weight' : null, createdAt: Date.now() });
-    toast('已添加项目 🎨');
+    toast(T('已添加项目 🎨'));
   }
   saveState();
   closeModal();
@@ -1158,24 +1175,24 @@ function closeLightbox() {
 function deleteRecord(id) {
   const r = state.records.find(x => x.id === id);
   if (!r) return;
-  if (!confirm('确定删除这条记录吗？')) return;
+  if (!confirm(T('确定删除这条记录吗？'))) return;
   (r.photos || []).forEach(pid => { revokePhotoUrl(pid); PhotoStore.deletePhoto(pid).catch(() => {}); });
   state.records = state.records.filter(x => x.id !== id);
   saveState();
   renderAll();
-  toast('已删除');
+  toast(T('已删除'));
 }
 function deleteHobby(id) {
   const h = hobbyById(id);
   if (!h) return;
   const n = state.records.filter(r => r.hobbyId === id).length;
-  if (!confirm(`确定删除「${h.name}」吗？${n ? `将同时删除它的 ${n} 条记录。` : ''}`)) return;
+  if (!confirm(`${T('确定删除「')}${h.name}${T('」吗？')}${n ? `${T('将同时删除它的 ')}${n}${T(' 条记录。')}` : ''}`)) return;
   state.records.filter(r => r.hobbyId === id).forEach(r => (r.photos || []).forEach(pid => { revokePhotoUrl(pid); PhotoStore.deletePhoto(pid).catch(() => {}); }));
   state.hobbies = state.hobbies.filter(x => x.id !== id);
   state.records = state.records.filter(r => r.hobbyId !== id);
   saveState();
   renderAll();
-  toast('已删除');
+  toast(T('已删除'));
 }
 async function exportData() {
   const records = [];
@@ -1198,7 +1215,7 @@ async function exportData() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast('已导出备份文件');
+  toast(T('已导出备份文件'));
 }
 async function importData(input) {
   const file = input.files[0];
@@ -1208,7 +1225,9 @@ async function importData(input) {
     const text = await file.text();
     const data = JSON.parse(text);
     if (!data || !Array.isArray(data.hobbies) || !Array.isArray(data.records)) throw new Error('bad');
-    if (!confirm(`导入将覆盖当前全部数据（当前 ${state.hobbies.length} 个项目、${state.records.length} 条记录）。是否继续？`)) return;
+    if (!confirm(currentLang() === 'en'
+      ? `Import will replace all data (${state.hobbies.length} projects, ${state.records.length} records). Continue?`
+      : `导入将覆盖当前全部数据（当前 ${state.hobbies.length} 个项目、${state.records.length} 条记录）。是否继续？`)) return;
     photoUrlCache.forEach(url => URL.revokeObjectURL(url));
     photoUrlCache.clear();
     const records = [];
@@ -1226,18 +1245,18 @@ async function importData(input) {
     state = { hobbies: data.hobbies.map(normalizeHobby), records };
     saveState();
     renderAll();
-    toast('导入成功 ✅');
+    toast(T('导入成功 ✅'));
   } catch (err) {
-    toast('导入失败：文件格式不正确');
+    toast(T('导入失败：文件格式不正确'));
   }
 }
 function clearData() {
-  if (!confirm('确定清空全部数据吗？此操作无法撤销。')) return;
-  if (!confirm('再次确认：所有项目和记录都会被删除。')) return;
+  if (!confirm(T('确定清空全部数据吗？此操作无法撤销。'))) return;
+  if (!confirm(T('再次确认：所有项目和记录都会被删除。'))) return;
   state = defaultState();
   saveState();
   renderAll();
-  toast('已清空');
+  toast(T('已清空'));
 }
 
 /* ============ 标签页与事件 ============ */
@@ -1286,6 +1305,7 @@ function onAction(action, el) {
     case 'delete-hobby': deleteHobby(el.dataset.id); break;
     case 'export-data': exportData(); break;
     case 'clear-data': clearData(); break;
+    case 'set-lang': setLang(el.dataset.lang); renderAll(); break;
     case 'set-theme': localStorage.setItem(THEME_KEY, el.dataset.theme); applyTheme(); renderData(); break;
     case 'toggle-theme': {
       const cur = localStorage.getItem(THEME_KEY) || 'light';
@@ -1303,7 +1323,7 @@ function onAction(action, el) {
     case 'music-style': {
       MusicPlayer.setStyle(el.dataset.style);
       renderData();
-      toast(`已切换到「${MUSIC_STYLE_LABELS[el.dataset.style] || el.dataset.style}」风格`);
+      toast(`${T('已切换到「')}${T(MUSIC_STYLE_LABELS[el.dataset.style] || el.dataset.style)}${T('」风格')}`);
       break;
     }
     case 'set-today-category': {
@@ -1349,7 +1369,7 @@ function onAction(action, el) {
       break;
     }
     case 'open-changelog': {
-      openModal('更新说明', `<div class="changelog">${CHANGELOG.map(item => `<div class="cl-item"><span class="cl-v">${item.v}</span><p>${item.text}</p></div>`).join('')}</div>`);
+      openModal(T('更新说明'), `<div class="changelog">${CHANGELOG.map(item => `<div class="cl-item"><span class="cl-v">${item.v}</span><p>${item.text}</p></div>`).join('')}</div>`);
       break;
     }
     case 'toggle-panel': {
@@ -1362,25 +1382,25 @@ function onAction(action, el) {
     case 'lock-save': {
       const a = $('#lock-new') ? $('#lock-new').value : '';
       const b = $('#lock-confirm') ? $('#lock-confirm').value : '';
-      if (!a || a.length < 4) { toast('密码至少 4 位'); return; }
-      if (a !== b) { toast('两次输入的密码不一致'); return; }
+      if (!a || a.length < 4) { toast(T('密码至少 4 位')); return; }
+      if (a !== b) { toast(T('两次输入的密码不一致')); return; }
       hashPassword(a).then(h => {
         localStorage.setItem(LOCK_KEY, h);
         renderData();
-        toast('应用锁已开启 🔒');
+        toast(T('应用锁已开启 🔒'));
       });
       break;
     }
     case 'lock-disable': {
       const cur = $('#lock-current') ? $('#lock-current').value : '';
-      if (!cur) { toast('请输入当前密码'); return; }
+      if (!cur) { toast(T('请输入当前密码')); return; }
       hashPassword(cur).then(h => {
         if (h === localStorage.getItem(LOCK_KEY)) {
           localStorage.removeItem(LOCK_KEY);
           renderData();
-          toast('应用锁已关闭');
+          toast(T('应用锁已关闭'));
         } else {
-          toast('密码错误');
+          toast(T('密码错误'));
         }
       });
       break;
@@ -1396,11 +1416,11 @@ function onAction(action, el) {
     }
     case 'focus-start': {
       const hobbyId = $('#focus-hobby') ? $('#focus-hobby').value : '';
-      if (!hobbyId || !hobbyById(hobbyId)) { toast('请先选择项目'); return; }
+      if (!hobbyId || !hobbyById(hobbyId)) { toast(T('请先选择项目')); return; }
       focusSession = { hobbyId, startedAt: Date.now(), pausedAt: null, pausedTotalMs: 0, running: true };
       saveFocusSession();
       renderAll();
-      toast('开始专注 🎯');
+      toast(T('开始专注 🎯'));
       break;
     }
     case 'focus-pause': {
@@ -1409,11 +1429,11 @@ function onAction(action, el) {
         focusSession.pausedTotalMs += Date.now() - focusSession.pausedAt;
         focusSession.pausedAt = null;
         focusSession.running = true;
-        toast('继续计时');
+        toast(T('继续计时'));
       } else {
         focusSession.pausedAt = Date.now();
         focusSession.running = false;
-        toast('已暂停');
+        toast(T('已暂停'));
       }
       saveFocusSession();
       renderAll();
@@ -1438,7 +1458,7 @@ function onAction(action, el) {
       clearFocusSession();
       closeModal();
       renderAll();
-      toast('已放弃本次计时');
+      toast(T('已放弃本次计时'));
       break;
     }
   }
@@ -1448,7 +1468,7 @@ function bindEvents() {
     const el = e.target.closest('[data-action]');
     if (el) onAction(el.dataset.action, el);
   });
-  document.addEventListener('hobby-music-started', () => toast('音乐已开启 🎵'));
+  document.addEventListener('hobby-music-started', () => toast(T('音乐已开启 🎵')));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) renderAll(); });
   document.addEventListener('mouseover', e => { const d = e.target.closest('.chart-dot'); if (d) showChartTooltip(d); });
   document.addEventListener('mouseout', e => { if (e.target.closest('.chart-dot')) hideChartTooltip(); });
@@ -1513,7 +1533,9 @@ async function hashPassword(pwd) {
 function showLockScreen() {
   $('#lock-screen').classList.remove('hidden');
   const input = $('#lock-input');
-  if (input) { input.value = ''; input.focus(); }
+  if (input) { input.value = ''; input.placeholder = T('请输入密码'); input.focus(); }
+  const btn = $('#lock-btn');
+  if (btn) btn.textContent = T('解锁');
 }
 function hideLockScreen() {
   $('#lock-screen').classList.add('hidden');
@@ -1521,14 +1543,14 @@ function hideLockScreen() {
 async function lockUnlock() {
   const input = $('#lock-input');
   const v = input ? input.value : '';
-  if (!v) { toast('请输入密码'); return; }
+  if (!v) { toast(T('请输入密码')); return; }
   const h = await hashPassword(v);
   if (h === localStorage.getItem(LOCK_KEY)) {
     sessionStorage.setItem(LOCK_SESSION_KEY, '1');
     hideLockScreen();
-    toast('已解锁 🔓');
+    toast(T('已解锁 🔓'));
   } else {
-    toast('密码错误');
+    toast(T('密码错误'));
     if (input) input.value = '';
   }
 }
@@ -1587,12 +1609,12 @@ function showUpdateBanner() {
 }
 function applyUpdate() {
   if (pendingUpdateWorker) {
-    toast('正在升级，马上回来…');
+    toast(T('正在升级，马上回来…'));
     pendingUpdateWorker.postMessage({ type: 'SKIP_WAITING' });
     return;
   }
   // 兜底：直接检查更新并刷新
-  toast('正在升级，马上回来…');
+  toast(T('正在升级，马上回来…'));
   navigator.serviceWorker.getRegistration()
     .then(reg => {
       if (!reg) { window.location.reload(); return; }
@@ -1612,10 +1634,10 @@ function dismissUpdate() {
 }
 async function checkForUpdates(manual) {
   if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) {
-    toast('当前环境不支持在线更新');
+    toast(T('当前环境不支持在线更新'));
     return;
   }
-  if (manual) toast('正在检查更新…');
+  if (manual) toast(T('正在检查更新…'));
   try {
     // 直接读取线上版本号，绕开浏览器与站点缓存
     const res = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
@@ -1623,7 +1645,7 @@ async function checkForUpdates(manual) {
     const remote = String(data.version || '');
     if (remote && remote !== String(APP_VERSION)) {
       showUpdateBanner();
-      if (manual) toast('发现新版本，点顶部横幅升级');
+      if (manual) toast(T('发现新版本，点顶部横幅升级'));
       return;
     }
     // 版本一致时，再让浏览器兜底检查一次 Service Worker
@@ -1631,11 +1653,11 @@ async function checkForUpdates(manual) {
     if (reg) reg.update().catch(() => {});
     setTimeout(() => {
       if (!pendingUpdateWorker && $('#update-banner').classList.contains('hidden')) {
-        toast('已是最新版本');
+        toast(T('已是最新版本'));
       }
     }, 1500);
   } catch (err) {
-    if (manual) toast('检查更新失败，请稍后再试');
+    if (manual) toast(T('检查更新失败，请稍后再试'));
   }
 }
 function maybeSeedDemo() {
@@ -1663,6 +1685,7 @@ async function init() {
   if (t && VIEWS.includes(t)) activeTab = t;
   maybeSeedDemo();
   applyTheme();
+  setLang(currentLang());
   bindEvents();
   setTab(activeTab, false);
   if (focusSession && !hobbyById(focusSession.hobbyId)) clearFocusSession();
@@ -1670,7 +1693,7 @@ async function init() {
   seedHealthProjects();
   setTimeout(() => {
     if (typeof MusicPlayer.isPending === 'function' && MusicPlayer.isPending()) {
-      toast('🎵 点一下屏幕即可开启背景音乐');
+      toast(T('🎵 点一下屏幕即可开启背景音乐'));
     }
   }, 1500);
   setInterval(() => {

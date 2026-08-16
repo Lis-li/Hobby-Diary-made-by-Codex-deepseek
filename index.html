@@ -14,15 +14,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" id="favicon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=2.7">
+<link rel="stylesheet" href="styles.css?v=2.7.1">
 </head>
 <body>
 <div id="app">
   <header class="app-header">
     <div class="brand">
-      <span class="brand-logo" id="brand-logo">🌸</span>
       <div class="brand-text">
-        <h1>TraceLife<span class="version-tag" id="version-tag">v2.7</span></h1>
+        <h1>TraceLife<span class="version-tag" id="version-tag">v2.7.1</span></h1>
         <p id="header-sub"></p>
       </div>
     </div>
@@ -65,7 +64,7 @@
     <div class="lock-emoji">🔒</div>
     <div class="lock-title">TraceLife</div>
     <input type="password" id="lock-input" placeholder="请输入密码" autocomplete="off">
-    <button class="btn-primary" data-action="lock-unlock">解锁</button>
+    <button class="btn-primary" id="lock-btn" data-action="lock-unlock">解锁</button>
   </div>
 </div>
 
@@ -81,6 +80,7 @@
 
 <script src="audio.js"></script>
 <script src="photoStore.js"></script>
-<script src="app.js?v=2.7"></script>
+<script src="lang.js"></script>
+<script src="app.js?v=2.7.1"></script>
 </body>
 </html>

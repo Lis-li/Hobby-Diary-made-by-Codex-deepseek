@@ -157,6 +157,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   display:block;width:100%;margin:10px 0 0;padding:9px;border-radius:10px;
   background:var(--bg-soft);color:var(--text-soft);font-size:12.5px;font-weight:600;touch-action:manipulation;
 }
+.migrate-box{background:var(--bg-soft);border-radius:12px;padding:12px 14px;margin-top:12px}
+.migrate-title{font-size:13.5px;font-weight:700;margin-bottom:6px}
+.migrate-step{font-size:12.5px;color:var(--text-soft);line-height:1.8}
 .cal-group{margin-bottom:12px}
 .cal-group-title{font-size:12.5px;font-weight:700;color:var(--text-soft);margin-bottom:8px}
 .stat-chips{display:flex;gap:6px;margin:4px 0 12px;overflow-x:auto;padding-bottom:2px}
