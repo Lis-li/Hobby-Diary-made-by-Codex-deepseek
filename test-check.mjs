@@ -81,6 +81,13 @@ async function main() {
   const before = await ev(`document.querySelectorAll('#view-today .record-row').length`);
   const chipIcon = await ev(`document.querySelector('.date-chip-ico').textContent`);
   const dateText = await ev(`document.querySelector('.date-text').textContent`);
+  const catSwitchCount = await ev(`document.querySelectorAll('#view-today .cat-btn').length`);
+  const statsChipCount = await ev(`document.querySelectorAll('[data-action="stats-category"]').length`);
+  await ev(`document.querySelector('[data-action="set-today-category"][data-category="work"]').click()`);
+  await wait(300);
+  const workCatEmpty = await ev(`document.querySelectorAll('#view-today .hobby-card').length === 0`);
+  await ev(`document.querySelector('[data-action="set-today-category"][data-category="hobby"]').click()`);
+  await wait(300);
   const musicBtnInit = await ev(`document.querySelector('#music-toggle').textContent`);
   await ev(`document.querySelector('[data-action="toggle-music"]').click()`);
   await wait(200);
@@ -169,6 +176,7 @@ async function main() {
   await send('Page.navigate', { url: BASE + 'hobbies' });
   await wait(800);
   const hobbyCountBefore = await ev(`document.querySelectorAll('.hobby-item').length`);
+  const groupHeadCount = await ev(`document.querySelectorAll('#view-hobbies .group-head').length`);
   await ev(`document.querySelector('[data-action="add-hobby"]').click()`);
   await wait(400);
   const emojiCount = await ev(`document.querySelectorAll('.emoji-opt').length`);
@@ -228,7 +236,7 @@ async function main() {
   await wait(600);
   const lockScreenGone = await ev(`document.querySelector('#lock-screen').classList.contains('hidden')`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, dateText, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, settingsTabLabel, storageBarShown, storageText, musicStyleCount, musicStyleSaved, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, lockScreenShown, lockScreenGone, versionShows1116: versionText.includes('v1.11.6'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, dateText, catSwitchCount, statsChipCount, workCatEmpty, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, groupHeadCount, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, settingsTabLabel, storageBarShown, storageText, musicStyleCount, musicStyleSaved, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, lockScreenShown, lockScreenGone, versionShows112: versionText.includes('v1.12'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();

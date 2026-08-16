@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '1.11.6';
+const APP_VERSION = '1.12';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -20,8 +20,14 @@ const MOODS = [
   { v: 4, emoji: '🙂', label: '不错' },
   { v: 5, emoji: '🤩', label: '超棒' }
 ];
+const CATEGORIES = {
+  hobby: { name: '爱好', emoji: '🎨', color: '#FF8A65' },
+  work: { name: '工作', emoji: '💼', color: '#5C6BC0' },
+  health: { name: '健康', emoji: '💪', color: '#4CAF50' }
+};
 const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力' };
 const CHANGELOG = [
+  { v: 'v1.12', text: '新增分类：爱好 / 工作 / 健康。今日页可切换分类，日历按分类着色并分组，统计页可按分类筛选，项目页按分类分组管理；旧数据自动归为爱好。' },
   { v: 'v1.11.6', text: '背景音乐新增 4 种风格（宁静 / 钢琴 / 轻快 / 活力），设置页可切换；音量再调大。' },
   { v: 'v1.11.5', text: '日期显示改为清晰的中文完整格式（安卓不再显示不全）；背景音乐音量再调大；新增可选的「应用锁」，保护隐私。' },
   { v: 'v1.11.4', text: '修复日历日期：应用在后台停留过夜后，回到前台会自动回到当天；背景音乐音量再调大一些。' },
@@ -98,6 +104,9 @@ let focusSaveHobbyId = null;
 let focusSaveMinutes = 0;
 let focusCardOpen = false;
 let lastToday = todayStr();
+let todayCategory = localStorage.getItem('hobby-diary:today-category') || 'hobby';
+let statsCategory = 'all';
+let selectedProjectCategory = 'hobby';
 const photoUrlCache = new Map();
 
 function defaultState() { return { hobbies: [], records: [] }; }
@@ -110,6 +119,7 @@ function normalizeHobby(h) {
     name: String(h.name || '未命名').slice(0, 20),
     emoji: isImageUrl(h.emoji) ? String(h.emoji) : String(h.emoji || '🎯').slice(0, 8),
     color: COLOR_PRESETS.includes(h.color) ? h.color : COLOR_PRESETS[0],
+    category: (h.category === 'work' || h.category === 'health') ? h.category : 'hobby',
     createdAt: h.createdAt || Date.now()
   };
 }
@@ -234,11 +244,18 @@ function renderToday() {
   if (!el) return;
   const bumpDate = currentDate !== lastRenderedDate;
   lastRenderedDate = currentDate;
-  const recs = recordsOn(currentDate);
+  const cat = CATEGORIES[todayCategory];
+  const projects = state.hobbies.filter(h => (h.category || 'hobby') === todayCategory);
+  const recs = recordsOn(currentDate).filter(r => { const h = hobbyById(r.hobbyId); return h && (h.category || 'hobby') === todayCategory; });
   const moods = recs.filter(r => r.mood).map(r => r.mood);
   const avg = moods.length ? (moods.reduce((a, b) => a + b, 0) / moods.length) : null;
   const moodEmoji = avg ? MOODS.reduce((best, m) => Math.abs(m.v - avg) < Math.abs(best.v - avg) ? m : best, MOODS[0]).emoji : null;
   const isToday = currentDate === todayStr();
+
+  const catSwitcher = `
+    <div class="cat-switch">
+      ${Object.keys(CATEGORIES).map(key => `<button class="cat-btn ${todayCategory === key ? 'on' : ''}" data-action="set-today-category" data-category="${key}">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</button>`).join('')}
+    </div>`;
 
   const nav = `
     <div class="date-nav">
@@ -256,16 +273,16 @@ function renderToday() {
       <span class="sum-item">${moodEmoji ? `<b>${moodEmoji}</b> 心情` : '心情 --'}</span>
     </div>`;
 
-  const grid = state.hobbies.length
-    ? `<div class="hobby-grid">${state.hobbies.map(h => hobbyCardHtml(h, currentDate)).join('')}<button class="hobby-card add-card" data-action="go-hobbies"><span class="add-plus">＋</span><span>添加爱好</span></button></div>`
-    : '<div class="empty-card">还没有爱好。<br>点击下方按钮添加你的第一个爱好吧～</div>';
+  const grid = projects.length
+    ? `<div class="hobby-grid">${projects.map(h => hobbyCardHtml(h, currentDate)).join('')}<button class="hobby-card add-card" data-action="go-hobbies"><span class="add-plus">＋</span><span>添加${cat.name}项目</span></button></div>`
+    : `<div class="empty-card">还没有${cat.name}项目。<br>点击下方按钮添加吧～</div>`;
 
   const list = recs.length
-    ? `<div class="section-title">当日记录（${recs.length}）</div><div class="record-list">${recs.map(recordRowHtml).join('')}</div>`
-    : `<div class="empty-card">${state.hobbies.length ? '今天还没有记录：点击上方的爱好卡片即可开始记录，或添加一条记录。' : '添加爱好后即可开始记录。'}</div>`;
+    ? `<div class="section-title">当日${cat.name}记录（${recs.length}）</div><div class="record-list">${recs.map(recordRowHtml).join('')}</div>`
+    : `<div class="empty-card">今天还没有${cat.name}记录：点击上方的项目卡片即可开始记录，或添加一条记录。</div>`;
 
-  el.innerHTML = nav + renderFocusCardHtml() + grid + list +
-    `<div class="bottom-actions"><button class="btn-primary" data-action="add-record">＋ 添加记录</button><button class="btn-secondary" data-action="go-hobbies">管理爱好</button></div>`;
+  el.innerHTML = catSwitcher + nav + renderFocusCardHtml() + grid + list +
+    `<div class="bottom-actions"><button class="btn-primary" data-action="add-record">＋ 添加记录</button><button class="btn-secondary" data-action="go-hobbies">管理项目</button></div>`;
 }
 
 /* ============ 专注计时（自由计时 v1） ============ */
@@ -329,8 +346,10 @@ function renderFocusCardHtml() {
         <button class="btn-primary" data-action="focus-stop">结束</button>
       </div>`;
   } else {
-    const opts = state.hobbies.map(h => `<option value="${h.id}">${iconText(h)} ${escapeHtml(h.name)}</option>`).join('');
-    body = state.hobbies.length
+  const catProjects = state.hobbies.filter(h => (h.category || 'hobby') === todayCategory);
+  const optsSource = catProjects.length ? catProjects : state.hobbies;
+  const opts = optsSource.map(h => `<option value="${h.id}">${iconText(h)} ${escapeHtml(h.name)}</option>`).join('');
+  body = optsSource.length
       ? `<div class="focus-pick"><select id="focus-hobby">${opts}</select><button class="btn-primary" data-action="focus-start">开始专注</button></div>
          <div class="focus-hint">自由计时：结束时可一键把本次时长保存到今天的记录（时长不是必填，不想要直接放弃即可）。</div>`
       : '<div class="empty-card small">先添加爱好，再开始专注计时</div>';
@@ -382,11 +401,14 @@ function renderCalendar() {
     const cls = ['cal-cell', ds === todayStr() ? 'today' : '', ds === selectedCalendarDate ? 'selected' : ''].filter(Boolean).join(' ');
     cells += `<div class="${cls}" data-action="select-day" data-date="${ds}">
       <span class="cal-num">${d}</span>
-      <span class="cal-dots">${recs.slice(0, 3).map(r => { const h = hobbyById(r.hobbyId); return `<i style="background:${h ? h.color : '#bbb'}"></i>`; }).join('')}${recs.length > 3 ? `<em>+${recs.length - 3}</em>` : ''}</span>
+      <span class="cal-dots">${recs.slice(0, 3).map(r => { const h = hobbyById(r.hobbyId); const c = CATEGORIES[h ? (h.category || 'hobby') : 'hobby']; return `<i style="background:${c.color}"></i>`; }).join('')}${recs.length > 3 ? `<em>+${recs.length - 3}</em>` : ''}</span>
     </div>`;
   }
 
   const selRecs = recordsOn(selectedCalendarDate);
+  const groups = {};
+  selRecs.forEach(r => { const h = hobbyById(r.hobbyId); const key = h ? (h.category || 'hobby') : 'hobby'; (groups[key] = groups[key] || []).push(r); });
+  const groupedHtml = Object.keys(groups).map(key => `<div class="cal-group"><div class="cal-group-title">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</div><div class="record-list">${groups[key].map(recordRowHtml).join('')}</div></div>`).join('');
   const sd = parseDate(selectedCalendarDate);
   const detail = `
     <div class="cal-detail">
@@ -394,7 +416,7 @@ function renderCalendar() {
         <div><b>${fmtCnDate(selectedCalendarDate)}</b><span class="week">${weekLabel(selectedCalendarDate)}${selectedCalendarDate === todayStr() ? ' · 今天' : ''}</span></div>
         <button class="link-btn" data-action="go-to-date" data-date="${selectedCalendarDate}">去记录 ›</button>
       </div>
-      ${selRecs.length ? `<div class="record-list">${selRecs.map(recordRowHtml).join('')}</div>` : '<div class="empty-card small">这一天还没有记录</div>'}
+      ${selRecs.length ? groupedHtml : '<div class="empty-card small">这一天还没有记录</div>'}
       <div class="bottom-actions"><button class="btn-primary" data-action="add-record" data-date="${selectedCalendarDate}">＋ 添加记录</button></div>
     </div>`;
 
@@ -414,17 +436,27 @@ function renderCalendar() {
 function renderStats() {
   const el = $('#view-stats');
   if (!el) return;
+  const filtered = statsCategory === 'all'
+    ? state.records
+    : state.records.filter(r => { const h = hobbyById(r.hobbyId); return h && (h.category || 'hobby') === statsCategory; });
+  const daysAll = [...new Set(filtered.map(r => r.date))].sort();
   const days14 = [];
   for (let i = 13; i >= 0; i--) days14.push(addDays(todayStr(), -i));
-  const counts = days14.map(d => recordsOn(d).length);
+  const counts = days14.map(d => filtered.filter(r => r.date === d).length);
   const max = Math.max(...counts, 1);
-  const ms = monthStats(todayStr().slice(0, 7));
-  const total = state.records.length;
-  const cur = currentStreakFor(uniqueDays());
-  const longest = longestStreakFor(uniqueDays());
-  const todayMin = recordsOn(todayStr()).reduce((s, r) => s + (r.minutes || 0), 0);
+  const ym = todayStr().slice(0, 7);
+  const msActive = daysAll.filter(d => d.startsWith(ym)).length;
+  const total = filtered.length;
+  const cur = currentStreakFor(daysAll);
+  const longest = longestStreakFor(daysAll);
+  const todayMin = filtered.filter(r => r.date === todayStr()).reduce((s, r) => s + (r.minutes || 0), 0);
   const weekStart = addDays(todayStr(), -6);
-  const weekMin = state.records.filter(r => r.date >= weekStart && r.date <= todayStr()).reduce((s, r) => s + (r.minutes || 0), 0);
+  const weekMin = filtered.filter(r => r.date >= weekStart && r.date <= todayStr()).reduce((s, r) => s + (r.minutes || 0), 0);
+  const chips = `
+    <div class="stat-chips">
+      <button class="stat-chip ${statsCategory === 'all' ? 'on' : ''}" data-action="stats-category" data-category="all">全部</button>
+      ${Object.keys(CATEGORIES).map(key => `<button class="stat-chip ${statsCategory === key ? 'on' : ''}" data-action="stats-category" data-category="${key}">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</button>`).join('')}
+    </div>`;
 
   const bars = days14.map((d, i) => {
     const c = counts[i];
@@ -436,7 +468,8 @@ function renderStats() {
     </div>`;
   }).join('');
 
-  const ranked = state.hobbies.map(h => ({ h, s: hobbyStats(h.id) }))
+  const projects = state.hobbies.filter(h => statsCategory === 'all' || (h.category || 'hobby') === statsCategory);
+  const ranked = projects.map(h => ({ h, s: hobbyStats(h.id) }))
     .sort((a, b) => b.s.count - a.s.count || b.s.minutes - a.s.minutes);
   const rows = ranked.length
     ? ranked.map(({ h, s }, i) => `<div class="rank-row">
@@ -448,11 +481,11 @@ function renderStats() {
         </div>
         <div class="rank-nums"><b>${s.count}</b> 次<br><span class="rank-min">${s.minutes} 分钟</span></div>
       </div>`).join('')
-    : '<div class="empty-card">还没有爱好数据，去今日页开始记录吧。</div>';
+    : '<div class="empty-card">这个分类还没有数据，去今日页开始记录吧。</div>';
 
-  el.innerHTML = `
+  el.innerHTML = chips + `
     <div class="stat-cards">
-      <div class="stat-card"><b>${ms.activeDays}</b><span>本月记录天数</span></div>
+      <div class="stat-card"><b>${msActive}</b><span>本月记录天数</span></div>
       <div class="stat-card"><b>${total}</b><span>累计记录</span></div>
       <div class="stat-card"><b>${cur}</b><span>当前连续</span></div>
       <div class="stat-card"><b>${longest}</b><span>最长连续</span></div>
@@ -461,34 +494,37 @@ function renderStats() {
     </div>
     <div class="section-title">最近 14 天</div>
     <div class="chart">${bars}</div>
-    <div class="section-title">爱好排行</div>
+    <div class="section-title">项目排行</div>
     <div class="rank-list">${rows}</div>`;
 }
 
 function renderHobbies() {
   const el = $('#view-hobbies');
   if (!el) return;
-  const items = state.hobbies.length
-    ? state.hobbies.map(h => {
-        const s = hobbyStats(h.id);
-        return `<div class="hobby-item" style="--hcolor:${h.color}">
-          ${iconTag(h, 'hobby-emoji')}
-          <div class="hobby-info">
-            <div class="hobby-name">${escapeHtml(h.name)}</div>
-            <div class="hobby-stats">${s.count} 次 · ${s.minutes} 分钟 · 连续 ${s.current} 天</div>
-          </div>
-          <div class="hobby-actions">
-            <button data-action="edit-hobby" data-id="${h.id}" title="编辑">✎</button>
-            <button data-action="delete-hobby" data-id="${h.id}" title="删除">🗑</button>
-          </div>
-        </div>`;
-      }).join('')
-    : '<div class="empty-card">还没有爱好，点击下方按钮添加第一个爱好。</div>';
+  const sections = ['hobby', 'work', 'health'].map(key => {
+    const items = state.hobbies.filter(h => (h.category || 'hobby') === key);
+    if (!items.length) return '';
+    const itemHtml = items.map(h => {
+      const s = hobbyStats(h.id);
+      return `<div class="hobby-item" style="--hcolor:${h.color}">
+        ${iconTag(h, 'hobby-emoji')}
+        <div class="hobby-info">
+          <div class="hobby-name">${escapeHtml(h.name)}</div>
+          <div class="hobby-stats">${s.count} 次 · ${s.minutes} 分钟 · 连续 ${s.current} 天</div>
+        </div>
+        <div class="hobby-actions">
+          <button data-action="edit-hobby" data-id="${h.id}" title="编辑">✎</button>
+          <button data-action="delete-hobby" data-id="${h.id}" title="删除">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="group-head">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}（${items.length}）</div><div class="hobby-list">${itemHtml}</div>`;
+  }).join('');
   el.innerHTML = `
-    <div class="page-head"><h2>我的爱好</h2><span class="page-sub">共 ${state.hobbies.length} 个</span></div>
-    <button class="btn-primary" data-action="add-hobby">＋ 添加新爱好</button>
-    <div class="hobby-list">${items}</div>
-    <div class="tip-card">💡 在「今日」页点击爱好卡片即可开始记录；卡片角落的 ✎ 可补充时长、心情、照片和备注。</div>`;
+    <div class="page-head"><h2>我的项目</h2><span class="page-sub">共 ${state.hobbies.length} 个</span></div>
+    <button class="btn-primary" data-action="add-hobby">＋ 添加新项目</button>
+    ${sections || '<div class="empty-card">还没有项目，点击上方按钮添加。</div>'}
+    <div class="tip-card">💡 在「今日」页点一下项目卡片即可开始记录；卡片角落的 ✎ 可补充心情、照片和备注。</div>`;
 }
 
 function panelCard(key, title, bodyHtml, extraClass) {
@@ -655,11 +691,15 @@ function openHobbyModal(hobby) {
   modalHobbyId = hobby ? hobby.id : null;
   selectedColor = hobby ? hobby.color : COLOR_PRESETS[0];
   selectedIcon = hobby && hobby.emoji ? hobby.emoji : '🎯';
+  selectedProjectCategory = hobby && hobby.category ? hobby.category : 'hobby';
   const dots = COLOR_PRESETS.map(c => `<button type="button" class="color-dot ${selectedColor === c ? 'on' : ''}" data-color="${c}" style="background:${c}" title="${c}"></button>`).join('');
   const emojiOpts = EMOJI_PRESETS.map(e => `<button type="button" class="emoji-opt ${selectedIcon === e ? 'on' : ''}" data-emoji="${e}">${e}</button>`).join('');
+  const catBtns = Object.keys(CATEGORIES).map(key => `<button type="button" class="cat-pick-btn ${selectedProjectCategory === key ? 'on' : ''}" data-action="pick-project-category" data-category="${key}">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</button>`).join('');
   openModal(hobby ? '编辑爱好' : '添加新爱好', `
     <form id="hobby-form">
       <input type="hidden" name="id" value="${hobby ? hobby.id : ''}">
+      <label>分类</label>
+      <div class="cat-pick">${catBtns}</div>
       <label>图标</label>
       <div class="icon-preview" id="hobby-icon-preview"></div>
       <div class="emoji-grid">${emojiOpts}</div>
@@ -703,12 +743,13 @@ function onHobbySubmit(e) {
   if (!name) { toast('请输入名称'); return; }
   const emoji = selectedIcon || '🎯';
   const color = selectedColor || COLOR_PRESETS[0];
+  const category = selectedProjectCategory || 'hobby';
   if (id) {
     const h = hobbyById(id);
-    if (h) { h.name = name; h.emoji = emoji; h.color = color; }
+    if (h) { h.name = name; h.emoji = emoji; h.color = color; h.category = category; }
     toast('已更新');
   } else {
-    state.hobbies.push({ id: uid(), name, emoji, color, createdAt: Date.now() });
+    state.hobbies.push({ id: uid(), name, emoji, color, category, createdAt: Date.now() });
     toast('已添加爱好 🎨');
   }
   saveState();
@@ -1008,6 +1049,28 @@ function onAction(action, el) {
       MusicPlayer.setStyle(el.dataset.style);
       renderData();
       toast(`已切换到「${MUSIC_STYLE_LABELS[el.dataset.style] || el.dataset.style}」风格`);
+      break;
+    }
+    case 'set-today-category': {
+      if (CATEGORIES[el.dataset.category]) {
+        todayCategory = el.dataset.category;
+        localStorage.setItem('hobby-diary:today-category', todayCategory);
+        renderAll();
+      }
+      break;
+    }
+    case 'stats-category': {
+      if (el.dataset.category === 'all' || CATEGORIES[el.dataset.category]) {
+        statsCategory = el.dataset.category;
+        renderStats();
+      }
+      break;
+    }
+    case 'pick-project-category': {
+      if (CATEGORIES[el.dataset.category]) {
+        selectedProjectCategory = el.dataset.category;
+        $$('#modal-body .cat-pick-btn').forEach(b => b.classList.toggle('on', b.dataset.category === el.dataset.category));
+      }
       break;
     }
     case 'open-changelog': {
