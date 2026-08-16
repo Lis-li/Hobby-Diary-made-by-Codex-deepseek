@@ -44,7 +44,7 @@ AGENTS.md             本说明
 ## 数据模型
 
 - hobbies（项目）：`{ id, name, emoji, color, category(hobby/work/health), createdAt }`，其中 emoji 可以是 Emoji 字符，也可以是上传图片压缩后的 data URL
-- records：`{ id, date(YYYY-MM-DD), hobbyId, minutes(可选), mood(1-5), note, photos(照片 ID 数组，最多 9 张，实际二进制存于 IndexedDB), createdAt }`
+- records：`{ id, date(YYYY-MM-DD), hobbyId, minutes(可选), mood(1-5), note, photos(照片 ID 数组，最多 9 张，实际二进制存于 IndexedDB), status(工作: done/doing/todo), metric(健康: weight/bloodSugar/bloodPressure), value/value2(健康数值，血压为收缩压/舒张压), createdAt }`
 - localStorage 键：`hobby-diary:v1`（数据）、`hobby-diary:theme`（主题）、`hobby-diary:focus-session`（专注计时会话）、`hobby-diary:lock`（应用锁密码哈希，仅本机保存）、`hobby-diary:music-style`（背景音乐风格）
 
 ## 代码规范
