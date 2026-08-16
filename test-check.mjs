@@ -83,9 +83,13 @@ async function main() {
   const dateText = await ev(`document.querySelector('.date-text').textContent`);
   const catSwitchCount = await ev(`document.querySelectorAll('#view-today .cat-btn').length`);
   const statsChipCount = await ev(`document.querySelectorAll('[data-action="stats-category"]').length`);
+  const projectTabLabel = await ev(`document.querySelector('[data-tab="hobbies"] span:last-child').textContent`);
   await ev(`document.querySelector('[data-action="set-today-category"][data-category="work"]').click()`);
   await wait(300);
   const workCatEmpty = await ev(`document.querySelectorAll('#view-today .hobby-card').length === 0`);
+  await ev(`document.querySelector('[data-action="set-today-category"][data-category="health"]').click()`);
+  await wait(300);
+  const focusHiddenInHealth = await ev(`!document.querySelector('#view-today .focus-card')`);
   await ev(`document.querySelector('[data-action="set-today-category"][data-category="hobby"]').click()`);
   await wait(300);
   const musicBtnInit = await ev(`document.querySelector('#music-toggle').textContent`);
@@ -193,11 +197,14 @@ async function main() {
   await ev(`document.querySelector('[data-action="add-hobby"]').click()`);
   await wait(300);
   await ev(`document.querySelector('[data-action="pick-project-category"][data-category="work"]').click()`);
+  const workEmojiCount = await ev(`document.querySelectorAll('#hobby-emoji-grid .emoji-opt').length`);
+  const workEmojiHasBriefcase = await ev(`document.querySelector('#hobby-emoji-grid').textContent.includes('💼')`);
   await ev(`(()=>{const f=document.querySelector('#hobby-form'); f.querySelector('[name="name"]').value='工作项目A'; f.requestSubmit(); return true;})()`);
   await wait(400);
   await ev(`document.querySelector('[data-action="add-hobby"]').click()`);
   await wait(300);
   await ev(`document.querySelector('[data-action="pick-project-category"][data-category="health"]').click()`);
+  const healthEmojiCount = await ev(`document.querySelectorAll('#hobby-emoji-grid .emoji-opt').length`);
   await ev(`(()=>{const f=document.querySelector('#hobby-form'); f.querySelector('[name="name"]').value='健康项目A'; f.requestSubmit(); return true;})()`);
   await wait(400);
   await ev(`document.querySelector('[data-action="switch-tab"][data-tab="today"]').click()`);
@@ -206,6 +213,7 @@ async function main() {
   await wait(300);
   await ev(`document.querySelector('#view-today .hobby-card[data-action="open-record"]').click()`);
   await wait(400);
+  const optgroupCount = await ev(`document.querySelectorAll('#record-form optgroup').length`);
   const workStatusBtns = await ev(`document.querySelectorAll('.status-btn[data-action="pick-work-status"]').length`);
   await ev(`document.querySelector('[data-action="pick-work-status"][data-status="done"]').click()`);
   await ev(`(()=>{const f=document.querySelector('#record-form'); f.querySelector('[name="note"]').value='完成了一个任务'; f.requestSubmit(); return true;})()`);
@@ -272,7 +280,7 @@ async function main() {
   await wait(600);
   const lockScreenGone = await ev(`document.querySelector('#lock-screen').classList.contains('hidden')`);
 
-  console.log('交互结果：', JSON.stringify({ before, chipIcon, dateText, catSwitchCount, statsChipCount, workCatEmpty, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, groupHeadCount, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, workStatusBtns, workStatusShown, healthMetricBtns, healthValueShown, healthChartArea, settingsTabLabel, storageBarShown, storageText, musicStyleCount, musicStyleSaved, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, lockScreenShown, lockScreenGone, versionShows20: versionText.includes('v2.0'), remoteVersion, versionTag }, null, 2));
+  console.log('交互结果：', JSON.stringify({ before, chipIcon, dateText, catSwitchCount, statsChipCount, projectTabLabel, workCatEmpty, focusHiddenInHealth, musicBtnInit, musicBtnMuted, musicBtnOn, focusCardExists, focusAfterNav, focusCardCollapsedInit, dateAnchorFix, focusCardOpened, focusTimerRunning, focusTimeText, focusPaused, focusSaveModal, focusSaveText, focusMinShown, focusTodayText, cardModalOpened, after, toastAfterAdd, noteAdded, moodSummary, photoGridCount, photoGridAfterRemove, photoGridAfterReadd, photoCount, lightboxOpened, lightboxClosed, photoAfterReload, photoSrcAfterReload, calPhotoCount, calPhotoSrc, modalOpened, submitted, noteEdited, toastAfterEdit, theme, hobbyCountBefore, groupHeadCount, emojiCount, emojiPicked, iconPreviewImg, hobbyCountAfter, hobbyImgIcon, workEmojiCount, workEmojiHasBriefcase, healthEmojiCount, optgroupCount, workStatusBtns, workStatusShown, healthMetricBtns, healthValueShown, healthChartArea, settingsTabLabel, storageBarShown, storageText, musicStyleCount, musicStyleSaved, bannerHiddenInit, bannerAction, bannerShown, bannerDismissed, changelogItems, changelogFirst, panelCollapsedInit, panelOpenCount, lockScreenShown, lockScreenGone, versionShows21: versionText.includes('v2.1'), remoteVersion, versionTag }, null, 2));
 
   ws.close();
   proc.kill();

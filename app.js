@@ -8,11 +8,15 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.1';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
 const EMOJI_PRESETS = ['🎨', '📚', '🏃', '🎵', '🎸', '🎹', '🎤', '🎬', '📷', '🎧', '🎮', '🕹', '🧩', '♟️', '⚽', '🏸', '🚴', '🏊', '🧗', '⛺', '🎣', '🌱', '🪴', '🍳', '☕', '✍️', '🖌', '📖', '🧵', '🧶', '🛹', '🧘', '🚶', '🗺', '🔭', '🪁', '🦋', '🌻', '🐱', '🐶', '🏀', '🎾', '🏓', '🎳', '🥊', '⛸', '🎿', '🏂', '🚣', '🏇', '🤸', '🤹', '🪂', '🏋', '🎻', '🎷', '🎺', '🪕', '🥁', '🎼', '🎶', '🎙', '🖼', '🧑‍🎨', '📝', '🖍', '✂️', '📓', '🗞', '💻', '🖥', '🎛', '🛠', '🤖', '📹', '🎞', '🃏', '🎲', '🎯', '🪀', '🧸', '🎪', '🏝', '🏔', '🌋', '🎡', '🎢', '🚁', '🚀', '✈️', '🚂', '🛥', '🏕', '🌌', '🌷', '🍀', '🌵', '🌈', '⭐', '🔥', '🍜', '🍰', '🍪', '🍩', '🥗', '🍣', '🍹', '🦊', '🐼', '🐨', '🦁', '🐰', '🦄', '🐢', '🐬', '🦜'];
+const WORK_EMOJIS = ['💼', '🗂️', '📋', '📁', '📂', '📄', '📝', '✏️', '🖊️', '🖋️', '💻', '🖥️', '⌨️', '🖱️', '🖨️', '📊', '📈', '📉', '🧮', '🗓️', '⏰', '⏱️', '📎', '📌', '🗃️', '🧑‍💻', '👩‍💻', '🛠️', '⚙️', '📞', '✉️', '📧', '🗄️', '📚', '🎓', '🏢', '🚀', '🧾', '💰', '🤝'];
+const HEALTH_EMOJIS = ['⚖️', '🩸', '❤️'];
+const PROJECT_EMOJIS = { hobby: EMOJI_PRESETS, work: WORK_EMOJIS, health: HEALTH_EMOJIS };
+const CATEGORY_DEFAULT_EMOJI = { hobby: '🎯', work: '💼', health: '⚖️' };
 const MOODS = [
   { v: 1, emoji: '😫', label: '很差' },
   { v: 2, emoji: '🙁', label: '不佳' },
@@ -27,6 +31,7 @@ const CATEGORIES = {
 };
 const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力' };
 const CHANGELOG = [
+  { v: 'v2.1', text: '今日页健康分类取消专注计时；底部「爱好」改名「项目」；项目图标按分类区分（工作图标更丰富、健康仅体重/血糖/血压）；记录弹窗项目按分类分组显示。' },
   { v: 'v2.0', text: '版本号升级为 V2 系列；新增工作完成状态、健康数值记录（体重/血糖/血压）与健康趋势折线图。' },
   { v: 'v1.12', text: '新增分类：爱好 / 工作 / 健康。今日页可切换分类，日历按分类着色并分组，统计页可按分类筛选，项目页按分类分组管理；旧数据自动归为爱好。' },
   { v: 'v1.11.6', text: '背景音乐新增 4 种风格（宁静 / 钢琴 / 轻快 / 活力），设置页可切换；音量再调大。' },
@@ -292,7 +297,8 @@ function renderToday() {
     ? `<div class="section-title">当日${cat.name}记录（${recs.length}）</div><div class="record-list">${recs.map(recordRowHtml).join('')}</div>`
     : `<div class="empty-card">今天还没有${cat.name}记录：点击上方的项目卡片即可开始记录，或添加一条记录。</div>`;
 
-  el.innerHTML = catSwitcher + nav + renderFocusCardHtml() + grid + list +
+  const focusHtml = todayCategory === 'health' ? '' : renderFocusCardHtml();
+  el.innerHTML = catSwitcher + nav + focusHtml + grid + list +
     `<div class="bottom-actions"><button class="btn-primary" data-action="add-record">＋ 添加记录</button><button class="btn-secondary" data-action="go-hobbies">管理项目</button></div>`;
 }
 
@@ -658,8 +664,14 @@ function openRecordModal(date, record, preferredHobbyId) {
   const isNew = !record;
   const targetHobby = record ? hobbyById(record.hobbyId) : null;
   const moodBtns = MOODS.map(m => `<button type="button" class="mood-btn ${selectedMood === m.v ? 'on' : ''}" data-mood="${m.v}" title="${m.label}">${m.emoji}</button>`).join('');
-  const hobbyOpts = state.hobbies.map(h =>
-    `<option value="${h.id}" ${(targetHobby && h.id === targetHobby.id) || (!targetHobby && h.id === preferredHobbyId) ? 'selected' : ''}>${iconText(h)} ${escapeHtml(h.name)}</option>`).join('');
+  const groups = {};
+  state.hobbies.forEach(h => { const key = h.category || 'hobby'; (groups[key] = groups[key] || []).push(h); });
+  const selectedHobbyId = targetHobby ? targetHobby.id : preferredHobbyId;
+  const hobbyOpts = ['hobby', 'work', 'health'].map(key => {
+    const list = groups[key];
+    if (!list || !list.length) return '';
+    return `<optgroup label="${CATEGORIES[key].emoji} ${CATEGORIES[key].name}">${list.map(h => `<option value="${h.id}" ${h.id === selectedHobbyId ? 'selected' : ''}>${iconText(h)} ${escapeHtml(h.name)}</option>`).join('')}</optgroup>`;
+  }).join('');
   const hobbyField = state.hobbies.length === 0
     ? '<p class="form-hint">请先到「爱好」页添加爱好。</p>'
     : (isNew
@@ -799,7 +811,6 @@ function openHobbyModal(hobby) {
   selectedIcon = hobby && hobby.emoji ? hobby.emoji : '🎯';
   selectedProjectCategory = hobby && hobby.category ? hobby.category : 'hobby';
   const dots = COLOR_PRESETS.map(c => `<button type="button" class="color-dot ${selectedColor === c ? 'on' : ''}" data-color="${c}" style="background:${c}" title="${c}"></button>`).join('');
-  const emojiOpts = EMOJI_PRESETS.map(e => `<button type="button" class="emoji-opt ${selectedIcon === e ? 'on' : ''}" data-emoji="${e}">${e}</button>`).join('');
   const catBtns = Object.keys(CATEGORIES).map(key => `<button type="button" class="cat-pick-btn ${selectedProjectCategory === key ? 'on' : ''}" data-action="pick-project-category" data-category="${key}">${CATEGORIES[key].emoji} ${CATEGORIES[key].name}</button>`).join('');
   openModal(hobby ? '编辑爱好' : '添加新爱好', `
     <form id="hobby-form">
@@ -808,7 +819,7 @@ function openHobbyModal(hobby) {
       <div class="cat-pick">${catBtns}</div>
       <label>图标</label>
       <div class="icon-preview" id="hobby-icon-preview"></div>
-      <div class="emoji-grid">${emojiOpts}</div>
+      <div class="emoji-grid" id="hobby-emoji-grid"></div>
       <label class="btn-secondary photo-add" for="hobby-icon-input">🖼 上传图片作图标</label>
       <input type="file" id="hobby-icon-input" accept="image/*" hidden>
       <label>名称<input name="name" required maxlength="20" value="${hobby ? escapeHtml(hobby.name) : ''}" placeholder="例如：画画"></label>
@@ -820,11 +831,7 @@ function openHobbyModal(hobby) {
       </div>
     </form>`);
   renderIconPreview();
-  $$('#modal-body .emoji-opt').forEach(b => b.addEventListener('click', () => {
-    selectedIcon = b.dataset.emoji;
-    $$('#modal-body .emoji-opt').forEach(x => x.classList.toggle('on', x === b));
-    renderIconPreview();
-  }));
+  renderEmojiGrid();
   $('#hobby-icon-input').addEventListener('change', () => {
     const file = $('#hobby-icon-input').files[0];
     $('#hobby-icon-input').value = '';
@@ -840,6 +847,17 @@ function openHobbyModal(hobby) {
     $$('#modal-body .color-dot').forEach(x => x.classList.toggle('on', x === b));
   }));
   $('#hobby-form').addEventListener('submit', onHobbySubmit);
+}
+function renderEmojiGrid() {
+  const grid = $('#hobby-emoji-grid');
+  if (!grid) return;
+  const list = PROJECT_EMOJIS[selectedProjectCategory] || EMOJI_PRESETS;
+  grid.innerHTML = list.map(e => `<button type="button" class="emoji-opt ${selectedIcon === e ? 'on' : ''}" data-emoji="${e}">${e}</button>`).join('');
+  $$('#hobby-emoji-grid .emoji-opt').forEach(b => b.addEventListener('click', () => {
+    selectedIcon = b.dataset.emoji;
+    $$('#hobby-emoji-grid .emoji-opt').forEach(x => x.classList.toggle('on', x === b));
+    renderIconPreview();
+  }));
 }
 function onHobbySubmit(e) {
   e.preventDefault();
@@ -1175,7 +1193,10 @@ function onAction(action, el) {
     case 'pick-project-category': {
       if (CATEGORIES[el.dataset.category]) {
         selectedProjectCategory = el.dataset.category;
+        selectedIcon = CATEGORY_DEFAULT_EMOJI[el.dataset.category] || '🎯';
         $$('#modal-body .cat-pick-btn').forEach(b => b.classList.toggle('on', b.dataset.category === el.dataset.category));
+        renderEmojiGrid();
+        renderIconPreview();
       }
       break;
     }
