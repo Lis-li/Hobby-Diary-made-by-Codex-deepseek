@@ -1,30 +1,32 @@
 /* styles.css —— 爱好日记界面样式：浅/深色主题、移动优先布局与各组件外观。 */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#FFF8F2;
-  --bg-soft:#FFF0E3;
+  --bg:#FAF5EF;
+  --bg-soft:#F5EBDF;
   --card:#FFFFFF;
-  --text:#3D2E23;
-  --text-soft:#8A7564;
-  --accent:#FF8A65;
-  --accent-2:#FFB74D;
-  --border:#F0DDCC;
-  --shadow:0 4px 16px rgba(160,110,70,.10);
+  --text:#382C24;
+  --text-soft:#8A7260;
+  --accent:#E8734A;
+  --accent-2:#F2A93B;
+  --border:#EFDCC8;
+  --shadow:0 4px 16px rgba(122,72,40,.08);
   --tab-bg:rgba(255,255,255,.94);
   --danger:#E5484D;
+  --serif:Georgia,"Times New Roman","Songti SC",serif;
 }
 :root[data-theme="dark"]{
-  --bg:#211A15;
-  --bg-soft:#2C231C;
-  --card:#2F251D;
-  --text:#F3E9DD;
-  --text-soft:#A79481;
-  --accent:#FF8A65;
-  --accent-2:#FFB74D;
-  --border:#453526;
+  --bg:#1F1914;
+  --bg-soft:#2A211A;
+  --card:#2D241C;
+  --text:#F4EADD;
+  --text-soft:#A58F7A;
+  --accent:#E8734A;
+  --accent-2:#F2A93B;
+  --border:#463526;
   --shadow:0 4px 16px rgba(0,0,0,.35);
-  --tab-bg:rgba(38,30,24,.95);
+  --tab-bg:rgba(36,29,23,.95);
   --danger:#F2555A;
+  --serif:Georgia,"Times New Roman","Songti SC",serif;
 }
 html{scroll-behavior:smooth}
 body{
@@ -33,8 +35,13 @@ body{
   color:var(--text);
   min-height:100vh;
   line-height:1.5;
+  -webkit-font-smoothing:antialiased;
 }
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit;touch-action:manipulation}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;
+}
+::selection{background:color-mix(in srgb,var(--accent) 30%,transparent)}
 #app{max-width:560px;margin:0 auto;padding:0 16px 108px}
 .hidden{display:none!important}
 
@@ -44,19 +51,23 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:16px 2px 12px;
   background:linear-gradient(180deg,var(--bg) 72%,transparent);
+  border-bottom:1px dotted color-mix(in srgb,var(--border) 85%,transparent);
 }
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
 .brand-logo{font-size:30px;line-height:1}
 .brand-logo img{width:30px;height:30px;border-radius:8px;object-fit:cover;display:block}
 .brand-text{min-width:0}
-.brand-text h1{font-size:20px;font-weight:800;letter-spacing:.5px}
-.version-tag{font-size:10px;color:var(--text-soft);font-weight:600;margin-left:6px;vertical-align:2px}
+.brand-text h1{
+  font-family:var(--serif);font-style:italic;font-weight:700;
+  font-size:23px;letter-spacing:.2px;line-height:1.15;
+}
+.version-tag{font-size:10px;color:var(--text-soft);font-weight:600;margin-left:6px;vertical-align:2px;font-family:inherit;font-style:normal}
 .brand-text p{font-size:11px;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .header-actions{display:flex;align-items:center;gap:8px}
 .chip{
   background:linear-gradient(135deg,var(--accent),var(--accent-2));
   color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap;
-  box-shadow:0 4px 10px rgba(255,138,101,.35);
+  box-shadow:0 4px 10px color-mix(in srgb,var(--accent) 40%,transparent);
 }
 
 /* ===== 通用按钮 ===== */
@@ -71,7 +82,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   width:100%;padding:13px;border-radius:14px;
   background:linear-gradient(135deg,var(--accent),var(--accent-2));
   color:#fff;font-size:15px;font-weight:700;
-  box-shadow:0 6px 16px rgba(255,138,101,.35);
+  box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 38%,transparent);
   transition:transform .12s;
 }
 .btn-primary:active{transform:scale(.98)}
@@ -99,7 +110,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .view{display:none;padding-top:6px}
 .view.active{display:block;animation:fadeIn .18s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.section-title{font-size:15px;font-weight:700;margin:18px 0 10px}
+.section-title{font-size:15px;font-weight:700;letter-spacing:.3px;margin:18px 0 10px}
 .page-head{display:flex;align-items:baseline;justify-content:space-between;margin:8px 0 14px}
 .page-head h2{font-size:20px;font-weight:800}
 .page-sub{font-size:12px;color:var(--text-soft)}
@@ -199,7 +210,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   flex:1;background:var(--card);border-radius:14px;padding:11px 8px;
   text-align:center;font-size:12px;color:var(--text-soft);box-shadow:var(--shadow);
 }
-.sum-item b{font-size:18px;color:var(--text);margin-right:3px}
+.sum-item b{font-size:18px;color:var(--text);margin-right:3px;font-variant-numeric:tabular-nums}
 .hobby-grid{
   display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin:6px 0 8px;
 }
@@ -209,6 +220,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   gap:4px;padding:8px;cursor:pointer;user-select:none;transition:transform .12s,box-shadow .15s,border-color .15s;
 }
 .hobby-card:active{transform:scale(.96)}
+@media(hover:hover){
+  .hobby-card:hover{
+    border-color:color-mix(in srgb,var(--hcolor) 45%,var(--border));
+    box-shadow:0 6px 18px color-mix(in srgb,var(--hcolor) 22%,transparent);
+    transform:translateY(-1px);
+  }
+  .record-row:hover,.setting-card:hover{box-shadow:0 6px 18px rgba(122,72,40,.12)}
+}
 .hobby-card.active{
   border-color:var(--hcolor);
   background:color-mix(in srgb,var(--hcolor) 12%,var(--card));
@@ -257,7 +276,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   font-size:15px;cursor:pointer;transition:.12s;box-shadow:var(--shadow);min-width:0;
 }
-.cal-num{white-space:nowrap;line-height:1}
+.cal-num{white-space:nowrap;line-height:1;font-variant-numeric:tabular-nums}
 .cal-cell:hover{border-color:var(--border)}
 .cal-cell.today{border-color:var(--accent);font-weight:700}
 .cal-cell.selected{background:var(--bg-soft);border-color:var(--accent);animation:cellPop .3s ease}
@@ -278,7 +297,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .stat-card{
   background:var(--card);border-radius:16px;padding:14px 8px;text-align:center;box-shadow:var(--shadow);
 }
-.stat-card b{font-size:24px;font-weight:800;display:block}
+.stat-card b{font-size:24px;font-weight:800;display:block;font-variant-numeric:tabular-nums}
 .stat-card span{font-size:11px;color:var(--text-soft);display:block;margin-top:3px}
 .chart{display:flex;align-items:stretch;gap:5px;height:150px;padding-top:18px}
 .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
@@ -303,7 +322,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .rank-name{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rank-sub{font-size:11px;color:var(--text-soft);margin-top:2px}
 .rank-nums{text-align:right;font-size:11px;color:var(--text-soft);flex:none}
-.rank-nums b{font-size:19px;color:var(--text)}
+.rank-nums b{font-size:19px;color:var(--text);font-variant-numeric:tabular-nums}
 .rank-min{font-size:11px;color:var(--text-soft)}
 
 /* ===== 爱好页 ===== */
@@ -400,8 +419,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   display:flex;align-items:flex-end;justify-content:center;
 }
 .modal{
-  background:var(--card);width:100%;max-width:520px;max-height:88vh;overflow:auto;
+  background:var(--card);width:100%;max-width:540px;max-height:88vh;overflow:auto;
   border-radius:22px 22px 0 0;padding:20px 20px 24px;animation:slideUp .22s ease;
+  box-shadow:0 -8px 40px rgba(40,24,12,.16);
 }
 @keyframes slideUp{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
 .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -476,6 +496,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .tab-btn .tab-ico{font-size:20px;line-height:1}
 .tab-btn.active{color:var(--accent);font-weight:700}
 .tab-btn.active .tab-ico{transform:translateY(-1px)}
+
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text-soft) 35%,transparent);border-radius:999px}
+::-webkit-scrollbar-track{background:transparent}
 
 /* ===== Toast ===== */
 .toast{

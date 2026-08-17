@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '2.7.4';
+const APP_VERSION = '2.7.5';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -37,6 +37,7 @@ const CATEGORIES = {
 };
 const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力', electronic: '电子', island: '海岛' };
 const CHANGELOG = [
+  { v: 'v2.7.5', text: '前端视觉优化：加深暖橙色调、品牌名衬线斜体、虚线足迹线、等宽数字、焦点可见与悬停微交互。' },
   { v: 'v2.7.4', text: '健康趋势图坐标轴只显示数值，单位不再重复（标题已标明），数值字号加大更清晰。' },
   { v: 'v2.7.3', text: '健康趋势图优化：图表放大、坐标轴配色与柱状图统一为暖橙色调，修复安卓上坐标轴被裁掉的问题。' },
   { v: 'v2.7.2', text: '语言设置独立成项；修复英文版底部 Tab 未翻译；安卓启动描述更新为「每天的生活记录」。' },
