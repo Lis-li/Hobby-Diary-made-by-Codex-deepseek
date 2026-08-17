@@ -8,7 +8,7 @@ const FOCUS_KEY = 'hobby-diary:focus-session';
 const LOCK_KEY = 'hobby-diary:lock';
 const LOCK_SESSION_KEY = 'hobby-diary:unlocked';
 const UPDATE_DISMISS_KEY = 'hobby-diary:update-dismissed';
-const APP_VERSION = '2.7.2';
+const APP_VERSION = '2.7.3';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const VIEWS = ['today', 'calendar', 'stats', 'hobbies', 'data'];
 const COLOR_PRESETS = ['#FF6B6B', '#F9A825', '#4CAF50', '#26C6DA', '#5C6BC0', '#AB47BC', '#EC407A', '#8D6E63'];
@@ -37,6 +37,7 @@ const CATEGORIES = {
 };
 const MUSIC_STYLE_LABELS = { calm: '宁静', piano: '钢琴', bright: '轻快', energetic: '活力', electronic: '电子', island: '海岛' };
 const CHANGELOG = [
+  { v: 'v2.7.3', text: '健康趋势图优化：图表放大、坐标轴配色与柱状图统一为暖橙色调，修复安卓上坐标轴被裁掉的问题。' },
   { v: 'v2.7.2', text: '语言设置独立成项；修复英文版底部 Tab 未翻译；安卓启动描述更新为「每天的生活记录」。' },
   { v: 'v2.7.1', text: '顶部布局去花朵更清爽；新增「迁移助手」与中英文双语界面（设置 → 外观 → 语言）。' },
   { v: 'v2.7', text: '应用改名为 TraceLife；背景音乐新增「电子」「海岛」两种风格（共 6 种），修复切换风格时旧声音残留的问题。' },
@@ -565,7 +566,7 @@ function renderHealthChartHtml() {
     const h = hobbyById(r.hobbyId);
     return h && (h.category || 'hobby') === 'health' && r.metric === healthMetric && r.date >= start && r.date <= todayStr();
   }).sort((a, b) => a.date < b.date ? -1 : 1);
-  const W = 320, H = 170, padL = 36, padR = 12, padT = 12, padB = 24;
+  const W = 320, H = 210, padL = 42, padR = 14, padT = 20, padB = 28;
   const dayIndex = d => Math.round((parseDate(d) - parseDate(start)) / 86400000);
   const x = d => padL + (dayIndex(d) / 29) * (W - padL - padR);
   const y = v => H - padB - ((v - min) / (max - min)) * (H - padT - padB);
@@ -594,15 +595,17 @@ function renderHealthChartHtml() {
   const unit = metricUnit(healthMetric).trim();
   const lines = series.map(s => {
     const pts = s.pts.map(p => [x(p.date), y(p.v)]);
-    return pts.length > 1 ? `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${s.color}" stroke-width="2"/>` : '';
+    return pts.length > 1 ? `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${s.color}" stroke-width="2.5"/>` : '';
   }).join('');
   const dots = series.map(s => s.pts.map(p => {
     const tip = `${s.label} ${p.v} ${unit} · ${fmtShortDate(p.date)}`;
-    return `<circle class="chart-dot" cx="${x(p.date)}" cy="${y(p.v)}" r="3.6" fill="${s.color}" data-tip="${tip}"/>`;
+    return `<circle class="chart-dot" cx="${x(p.date)}" cy="${y(p.v)}" r="4.2" fill="${s.color}" data-tip="${tip}"/>`;
   }).join('')).join('');
+  const grid = [0.25, 0.5, 0.75].map(f => `<line x1="${padL}" y1="${padT + (H - padT - padB) * f}" x2="${W - padR}" y2="${padT + (H - padT - padB) * f}" stroke="#F5D9BE" stroke-width="1"/>`).join('');
   const axis = `
-    <line x1="${padL}" y1="${y(max)}" x2="${padL}" y2="${y(min)}" stroke="#ccc" stroke-width="1"/>
-    <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="#ccc" stroke-width="1"/>
+    ${grid}
+    <line x1="${padL}" y1="${y(max)}" x2="${padL}" y2="${y(min)}" stroke="#F2C4A0" stroke-width="1.5"/>
+    <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="#F2C4A0" stroke-width="1.5"/>
     <text x="${padL - 6}" y="${y(max) + 4}" text-anchor="end" class="axis-label">${max}${unit}</text>
     <text x="${padL - 6}" y="${y(min) + 4}" text-anchor="end" class="axis-label">${min}${unit}</text>
     <text x="${padL}" y="${H - 8}" class="axis-label">${fmtShortDate(start)}</text>
